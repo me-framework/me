@@ -1,15 +1,16 @@
 {
     "name": "me-framework/me",
-    "type": "library",
     "description": "Me Framework",
     "keywords": ["me", "framework"],
-    "homepage": "https://github.com/me-framework/me",
+    "homepage": "https://www.meframework.ir/",
+    "type": "library",
     "license": "Apache-2.0",
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "Hossein Najafi",
             "email": "hnajafi1994@gmail.com",
-            "homepage": "https://www.meframework.ir/",
+            "homepage": "https://www.hosseinnajafi.ir/",
             "role": "Founder and project lead"
         }
     ],

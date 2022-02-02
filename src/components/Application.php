@@ -21,7 +21,7 @@ class Application extends Component {
     /**
      * @var string
      */
-    public $moduleNamespace  = 'Modules';
+    public $moduleNamespace  = 'app\Modules';
     /**
      * 
      */
