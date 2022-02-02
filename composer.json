@@ -1,0 +1,24 @@
+{
+    "name": "me-framework/me",
+    "type": "library",
+    "description": "Me Framework",
+    "keywords": ["me", "framework"],
+    "homepage": "https://github.com/me-framework/me",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Hossein Najafi",
+            "email": "hnajafi1994@gmail.com",
+            "homepage": "https://www.meframework.ir/",
+            "role": "Founder and project lead"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "me\\": "src/"
+        }
+    }
+}
