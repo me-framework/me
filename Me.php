@@ -1,6 +1,6 @@
 <?php
 defined('ME_DEBUG') || define('ME_DEBUG', false);
-define('ME_PATH', __DIR__);
+define('ME_PATH', __DIR__ . '/src');
 define('ROOT_PATH', dirname(filter_input(INPUT_SERVER, 'SCRIPT_FILENAME')));
 define('WEB', dirname(filter_input(INPUT_SERVER, 'PHP_SELF')));
 class Me {
