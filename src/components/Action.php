@@ -7,19 +7,20 @@ use ReflectionMethod;
  */
 class Action extends Component {
     /**
-     * @var string
+     * @var string Action ID
      */
     public $id;
     /**
-     * @var Controller
+     * @var \me\components\Controller Controller Object
      */
     public $parent;
     /**
-     * @var string
+     * @var string Action Method
      */
     public $actionMethod;
     /**
-     * 
+     * @param array $params Parameters
+     * @return \me\components\Response|mixed Response
      */
     public function run($params) {
         $method = new ReflectionMethod($this->parent, $this->actionMethod);

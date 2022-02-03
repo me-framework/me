@@ -7,35 +7,50 @@ use Exception;
  */
 class Module extends Component {
     /**
-     * @var string
+     * @var string Module ID
      */
     public $id;
     /**
-     * @var Module
+     * @var \me\components\Module|null Parent Object or null (root module)
      */
     public $parent;
     /**
-     * @var string
+     * @var string Controller Namespace
      */
     public $controllerNamespace;
     /**
-     * @var string
+     * @var string Module Namespace
      */
     public $moduleNamespace;
     /**
-     * @param string $route
-     * @return array
+     * @var string Default Route
+     */
+    public $defaultRoute = 'default/index';
+    /**
+     * @param string $route Route
+     * @return array [\me\components\Controller $controller, string $action_id]
      */
     public function create_controller($route) {
-        list($id, $route2) = explode('/', $route, 2);
+
+        if ($route === '') {
+            $route = $this->defaultRoute;
+        }
+
+        if (strpos($route, '/') !== false) {
+            list($id, $route2) = explode('/', $route, 2);
+        }
+        else {
+            $id     = $route;
+            $route2 = '';
+        }
 
         $module = $this->get_module($id);
-        if ($module !== null) {
+        if (!is_null($module)) {
             return $module->create_controller($route2);
         }
 
-        $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id)));
-        $className = $this->controllerNamespace . '\\' . $name . 'Controller';
+        $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id))) . 'Controller';
+        $className = "$this->controllerNamespace\\$name";
         if (!class_exists($className) || !is_subclass_of($className, Controller::class)) {
             throw new Exception("Controller { $className } Not Found", 12001);
         }
@@ -44,7 +59,8 @@ class Module extends Component {
         return [$controller, $route2];
     }
     /**
-     * @return Module
+     * @param string $id Module ID
+     * @return \me\components\Module|null Module Object or null
      */
     public function get_module($id) {
 

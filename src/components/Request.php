@@ -1,24 +1,113 @@
 <?php
 namespace me\components;
 use Me;
+use Exception;
 /**
- * @property-read string $pathInfo
- * @property-read string $scriptUrl
- * @property-read string $baseUrl
+ * @property-read string $pathInfo Path Info
+ * @property-read string $scriptUrl Script Url
+ * @property-read string $baseUrl Base Url
  */
 class Request extends Component {
     /**
-     * 
+     * @var string Path Info
      */
     private $_pathInfo;
     /**
-     * 
+     * @var string Script Url
      */
     private $_scriptUrl;
     /**
-     * 
+     * @var string Base Url
      */
     private $_baseUrl;
+    /**
+     * @return array [string $route, array $params]
+     */
+    public function resolve() {
+        /* @var $routeManager \me\components\RouteManager */
+        $routeManager = Me::$app->get('routeManager');
+
+        $result = $routeManager->parseRequest($this);
+        if ($result === false) {
+            throw new Exception('Page Not Found');
+        }
+
+        list($route, $params) = $result;
+        $_GET = $params + $_GET;
+        return [$route, $this->get()];
+    }
+    /**
+     * @return string Path Info
+     */
+    public function getPathInfo() {
+        if ($this->_pathInfo === null) {
+            $this->_pathInfo = $this->resolvePathInfo();
+        }
+        return $this->_pathInfo;
+    }
+    /**
+     * @return string Path Info
+     */
+    public function resolvePathInfo() {
+        $pathInfo = filter_input(INPUT_SERVER, 'REQUEST_URI');
+        if (($pos      = strpos($pathInfo, '?')) !== false) {
+            $pathInfo = substr($pathInfo, 0, $pos);
+        }
+        $baseUrl = $this->getBaseUrl();
+        if ($baseUrl !== '' && strpos($pathInfo, $baseUrl) === 0) {
+            $pathInfo = substr($pathInfo, strlen($baseUrl));
+        }
+        return trim($pathInfo, '/');
+    }
+    /**
+     * @return string Script Url
+     */
+    public function getScriptUrl() {
+        if ($this->_scriptUrl === null) {
+            $this->_scriptUrl = filter_input(INPUT_SERVER, 'SCRIPT_NAME');
+        }
+        return $this->_scriptUrl;
+    }
+    /**
+     * @return string Base Url
+     */
+    public function getBaseUrl() {
+        if ($this->_baseUrl === null) {
+            $this->_baseUrl = rtrim(dirname($this->getScriptUrl()), '\\/');
+        }
+        return $this->_baseUrl;
+    }
+    /**
+     * @return string Request Method
+     */
+    public function getMethod() {
+        $method = filter_input(INPUT_SERVER, 'REQUEST_METHOD');
+        if ($method) {
+            return strtoupper($method);
+        }
+        return 'GET';
+    }
+    public function getIsGet() {
+        return $this->getMethod() === 'GET';
+    }
+    public function getIsOptions() {
+        return $this->getMethod() === 'OPTIONS';
+    }
+    public function getIsHead() {
+        return $this->getMethod() === 'HEAD';
+    }
+    public function getIsPost() {
+        return $this->getMethod() === 'POST';
+    }
+    public function getIsDelete() {
+        return $this->getMethod() === 'DELETE';
+    }
+    public function getIsPut() {
+        return $this->getMethod() === 'PUT';
+    }
+    public function getIsPatch() {
+        return $this->getMethod() === 'PATCH';
+    }
     public function get($name = null, $defaultValue = null) {
         if ($name === null) {
             return $_GET;
@@ -47,84 +136,5 @@ class Request extends Component {
             return $_FILES[$name];
         }
         return $defaultValue;
-    }
-    /**
-     * @return array
-     */
-    public function resolve() {
-        list($route, $params) = Me::$app->get('routeManager')->parseRequest($this);
-        return [$route, $params];
-    }
-    /**
-     * 
-     */
-    public function getPathInfo() {
-        if ($this->_pathInfo === null) {
-            $this->_pathInfo = $this->resolvePathInfo();
-        }
-        return $this->_pathInfo;
-    }
-    /**
-     * 
-     */
-    public function resolvePathInfo() {
-        $pathInfo = filter_input(INPUT_SERVER, 'REQUEST_URI');
-        if (($pos = strpos($pathInfo, '?')) !== false) {
-            $pathInfo = substr($pathInfo, 0, $pos);
-        }
-        $baseUrl = $this->getBaseUrl();
-        if ($baseUrl !== '' && strpos($pathInfo, $baseUrl) === 0) {
-            $pathInfo = substr($pathInfo, strlen($baseUrl));
-        }
-        return $pathInfo;
-    }
-    /**
-     * 
-     */
-    public function getScriptUrl() {
-        if ($this->_scriptUrl === null) {
-            $this->_scriptUrl = filter_input(INPUT_SERVER, 'SCRIPT_NAME');
-        }
-        return $this->_scriptUrl;
-    }
-    /**
-     * 
-     */
-    public function getBaseUrl() {
-        if ($this->_baseUrl === null) {
-            $this->_baseUrl = rtrim(dirname($this->getScriptUrl()), '\\/');
-        }
-        return $this->_baseUrl;
-    }
-    /**
-     * 
-     */
-    public function getMethod(): string {
-        $method = filter_input(INPUT_SERVER, 'REQUEST_METHOD');
-        if ($method) {
-            return strtoupper($method);
-        }
-        return 'GET';
-    }
-    public function getIsGet(): bool {
-        return $this->getMethod() === 'GET';
-    }
-    public function getIsOptions(): bool {
-        return $this->getMethod() === 'OPTIONS';
-    }
-    public function getIsHead(): bool {
-        return $this->getMethod() === 'HEAD';
-    }
-    public function getIsPost(): bool {
-        return $this->getMethod() === 'POST';
-    }
-    public function getIsDelete(): bool {
-        return $this->getMethod() === 'DELETE';
-    }
-    public function getIsPut(): bool {
-        return $this->getMethod() === 'PUT';
-    }
-    public function getIsPatch(): bool {
-        return $this->getMethod() === 'PATCH';
     }
 }

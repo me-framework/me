@@ -4,7 +4,7 @@ use Me;
 use Exception;
 class Component {
     /**
-     * 
+     * @param array $config Component Config
      */
     public function __construct($config = []) {
         if (!empty($config)) {

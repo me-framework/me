@@ -1,36 +1,71 @@
 <?php
 namespace me\components;
+use Me;
+use Exception;
 class RouteManager extends Component {
     /**
-     * @var string
+     * @var \me\components\RouteRule[] Route Rules
      */
-    public $defaultModule     = 'site';
+    public $rules      = [];
     /**
-     * @var string
+     * @var array Rule Config such as class, pattern, verb, route
      */
-    public $defaultController = 'default';
+    public $ruleConfig = ['class' => RouteRule::class];
     /**
-     * @var string
+     * 
      */
-    public $defaultAction     = 'index';
+    public function init() {
+        parent::init();
+        $this->rules = $this->buildRules($this->rules);
+    }
     /**
-     * @var array
+     * Build Rules
+     * @param array $ruleDeclarations Rule Declarations
+     * @return \me\components\RouteRule[] Built Rules
      */
-    public $map               = [];
+    private function buildRules($ruleDeclarations) {
+        $builtRules = [];
+        foreach ($ruleDeclarations as $key => $rule) {
+            $builtRules[] = $this->buildRule($key, $rule);
+        }
+        return $builtRules;
+    }
     /**
-     * @param Request $request
+     * Build Rule
+     * @param string $pattern Pattern
+     * @param string|array|\me\components\RouteRule $rule Rule
+     */
+    private function buildRule($pattern, $rule) {
+        if (is_string($rule)) {
+            $verbs   = 'GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS';
+            $rule    = ['route' => $rule];
+            $matches = [];
+            if (preg_match("/^((?:($verbs),)*($verbs))\\s+(.*)$/", $pattern, $matches)) {
+                $rule['verb'] = explode(',', $matches[1]);
+                $pattern          = $matches[4];
+            }
+            $rule['pattern'] = $pattern;
+        }
+        if (is_array($rule)) {
+            $rule = Me::createObject(array_merge($this->ruleConfig, $rule));
+        }
+        if (!($rule instanceof RouteRule)) {
+            throw new Exception('Route rule class must implement RouteRule.');
+        }
+        return $rule;
+    }
+    /**
+     * @param \me\components\Request $request Request
      * @return array [$route, $params]
      */
-    public function parseRequest(Request $request): array {
-        $pathInfo = trim($request->pathInfo, '/');
-        if (isset($this->map[$pathInfo])) {
-            return [$this->map[$pathInfo], $request->get()];
+    public function parseRequest($request) {
+        foreach ($this->rules as $rule) {
+            $result = $rule->parseRequest($request);
+            if ($result !== false) {
+                return $result;
+            }
         }
-        //$items    = explode('/', $pathInfo);
-        //$items[0] = (!isset($items[0]) || $items[0] == '' ? $this->defaultModule : $items[0]);
-        //$items[1] = (!isset($items[1]) || $items[1] == '' ? $this->defaultController : $items[1]);
-        //$items[2] = (!isset($items[2]) || $items[2] == '' ? $this->defaultAction : $items[2]);
-        //$route    = implode('/', $items);
-        return [$pathInfo, $request->get()];
+        $route = $request->getPathInfo();
+        return [$route, []];
     }
 }

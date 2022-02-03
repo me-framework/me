@@ -7,39 +7,44 @@ use Exception;
  */
 class Application extends Component {
     /**
-     * @var string
+     * @var string Charset
      */
     public $charset          = 'UTF-8';
     /**
-     * @var string
+     * @var string Language
      */
     public $language         = 'fa-IR';
     /**
-     * @var string
+     * @var string Time Zone
      */
     public $timezone         = 'Asia/Tehran';
     /**
-     * @var string
+     * @var string Module Namespace
      */
     public $moduleNamespace  = 'app\Modules';
     /**
-     * 
+     * @var string Default Route
+     */
+    public $defaultRoute     = 'site/default/index';
+    /**
+     * @var array Components Definitions
      */
     private $_definitions    = [];
     /**
-     * 
+     * @var array Components Objects
      */
     private $_components     = [];
     /**
-     * @var array
+     * @var array Core Components
      */
     private $_corecomponents = [
-        'routeManager' => ['class' => 'me\components\RouteManager'],
-        'request'      => ['class' => 'me\components\Request'],
-        'response'     => ['class' => 'me\components\Response'],
+        'routeManager' => ['class' => RouteManager::class],
+        'request'      => ['class' => Request::class],
+        'response'     => ['class' => Response::class],
     ];
     /**
-     * 
+     * @param array $config Application Config
+     * @return \me\components\Application
      */
     public function __construct($config = []) {
         if (!isset($config['components'])) {
@@ -62,11 +67,11 @@ class Application extends Component {
         if (isset($this->_components[$id])) {
             return $this->_components[$id];
         }
-        
+
         if (isset($this->_definitions[$id])) {
             return $this->_components[$id] = Me::createObject($this->_definitions[$id]);
         }
-        
+
         throw new Exception("Component { $id } Not Found", 11001);
     }
     /**
@@ -81,7 +86,7 @@ class Application extends Component {
         $this->_definitions[$id] = $definition;
     }
     /**
-     * @param array $components
+     * @param array $components Components Definitions
      * @return void
      */
     public function setComponents($components) {
@@ -90,7 +95,7 @@ class Application extends Component {
         }
     }
     /**
-     * @param string $basePath
+     * @param string $basePath Base Path
      * @return void
      */
     public function setBasePath($basePath) {
@@ -114,29 +119,30 @@ class Application extends Component {
         $this->handle_request();
     }
     /**
-     * 
+     * @return void
      */
     public function handle_error($code, $file, $line, $message, $exception = null) {
-        /* @var $response Response */
         $data = ['done' => false, 'messages' => ['خطای سرور']];
         if (ME_DEBUG) {
             $data['messages'] = [$message];
-            $data['code'] = $code;
-            $data['file'] = $file;
-            $data['line'] = $line;
+            $data['code']     = $code;
+            $data['file']     = $file;
+            $data['line']     = $line;
             if (!is_null($exception)) {
                 $data['exception'] = $exception;
             }
         }
+        /* @var $response \me\components\Response */
         $response       = $this->get('response');
         $response->data = $data;
         $response->send();
     }
     /**
-     * 
+     * @return void
      */
     public function handle_request() {
         list($route, $params) = $this->get('request')->resolve();
+
         $result = $this->handle_action($route, $params);
         if ($result instanceof Response) {
             $result->send();
@@ -147,28 +153,40 @@ class Application extends Component {
         $response->send();
     }
     /**
-     * @param string $route
-     * @param array $params
-     * @return Response|string
+     * @param string $route Route
+     * @param array $params Parameters
+     * @return \me\components\Response|mixed
      */
     public function handle_action($route, $params) {
-        /* @var $module Module */
-        /* @var $controller Controller */
-        /* @var $actionID string */
+        /* @var $module \me\components\Module */
+        /* @var $controller \me\components\Controller */
+        /* @var $action_id string */
         list($module, $route2) = $this->create_module($route);
-        list($controller, $actionID) = $module->create_controller($route2);
-        return $controller->run_action($actionID, $params);
+        list($controller, $action_id) = $module->create_controller($route2);
+        return $controller->run_action($action_id, $params);
     }
     /**
-     * 
+     * @param string $route Route
+     * @return array [\me\components\Module $module, string $route]
      */
     public function create_module($route) {
-        list($id, $route2) = explode('/', $route, 2);
+
+        if ($route === '') {
+            $route = $this->defaultRoute;
+        }
+
+        if (strpos($route, '/') !== false) {
+            list($id, $route2) = explode('/', $route, 2);
+        }
+        else {
+            $id     = $route;
+            $route2 = '';
+        }
 
         $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id)));
         $className = $this->moduleNamespace . "\\$name\\Module";
 
-        if (!class_exists($className) || !is_subclass_of($className, 'me\components\Module')) {
+        if (!class_exists($className) || !is_subclass_of($className, Module::class)) {
             throw new Exception("Module { $className } Not Found", 11002);
         }
 
