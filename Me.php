@@ -140,7 +140,7 @@ class Me {
 }
 //
 spl_autoload_register(['Me', 'autoload'], true, true);
-Me::$container = new me\components\Container();
+Me::$container = new me\core\components\Container();
 //
 function files($name = null, $defaultValue = null) {
     return Me::$app->get('request')->files($name, $defaultValue);
