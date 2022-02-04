@@ -3,6 +3,7 @@ namespace me\components;
 use Me;
 use Exception;
 use ReflectionMethod;
+use me\core\Component;
 /**
  * 
  */

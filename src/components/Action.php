@@ -2,6 +2,7 @@
 namespace me\components;
 use Exception;
 use ReflectionMethod;
+use me\core\Component;
 /**
  * 
  */

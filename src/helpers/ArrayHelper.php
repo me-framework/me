@@ -1,20 +1,7 @@
 <?php
 namespace me\helpers;
-class ArrayHelper extends Helper {
-    /**
-     * @param array $array Array
-     * @param mixed $name Array Key
-     * @param mixed $defaultValue Default Value
-     * @return mixed Array Value Or Default Value
-     */
-    public static function Remove(array &$array, $name, $defaultValue = null) {
-        if (isset($array[$name])) {
-            $data = $array[$name];
-            unset($array[$name]);
-            return $data;
-        }
-        return $defaultValue;
-    }
+use me\core\helpers\ArrayHelper as BaseArrayHelper;
+class ArrayHelper extends BaseArrayHelper {
     /**
      * @param array $array1 The array in which elements are replaced.
      * @param array $array2 The array from which elements will be extracted.

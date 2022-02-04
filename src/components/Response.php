@@ -1,5 +1,6 @@
 <?php
 namespace me\components;
+use me\core\Component;
 class Response extends Component {
     public $code    = 200;
     public $data    = [];

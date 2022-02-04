@@ -2,6 +2,7 @@
 namespace me\components;
 use Me;
 use Exception;
+use me\core\Component;
 /**
  * @property-read string $pathInfo Path Info
  * @property-read string $scriptUrl Script Url

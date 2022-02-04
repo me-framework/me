@@ -15,7 +15,8 @@
         }
     ],
     "require": {
-        "php": ">=7.0.0"
+        "php": ">=7.0.0",
+        "me-framework/core": "main-dev"
     },
     "autoload": {
         "psr-4": {

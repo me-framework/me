@@ -1,5 +1,6 @@
 <?php
 namespace me\components;
+use me\core\Component;
 class RouteRule extends Component {
     /**
      * @var string Pattern
