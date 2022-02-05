@@ -31,7 +31,7 @@ class Me {
                 $file = static::getAlias($file);
             }
         }
-        elseif(strpos($className, '\\') !== false) {
+        elseif (strpos($className, '\\') !== false) {
             $file = static::getAlias('@' . str_replace(['\\'], ['/'], $className) . '.php');
             if (is_null($file) || !is_file($file)) {
                 return;
@@ -46,26 +46,13 @@ class Me {
     /**
      * 
      */
-    public static function configure($object, $properties) {
-        foreach ($properties as $name => $value) {
-            $object->$name = $value;
-        }
-        return $object;
-    }
-    /**
-     * 
-     */
     public static function createObject($id) {
-        return static::$container->build($id);
+        return me\core\components\Container::build($id);
     }
-    //
-    //
-    //
-    //
     /**
      * @var array
      */
-    public static $aliases    = [
+    public static $aliases = [
         '@me'   => ME_PATH,
         '@root' => ROOT_PATH,
         '@web'  => WEB,
@@ -94,10 +81,6 @@ class Me {
     public static function setAlias($alias, $path) {
         static::$aliases[$alias] = $path;
     }
-    //
-    //
-    //
-    //
     /**
      * 
      */
@@ -138,16 +121,5 @@ class Me {
         return $text;
     }
 }
-//
+
 spl_autoload_register(['Me', 'autoload'], true, true);
-Me::$container = new me\core\components\Container();
-//
-function files($name = null, $defaultValue = null) {
-    return Me::$app->get('request')->files($name, $defaultValue);
-}
-function post($name = null, $defaultValue = null) {
-    return Me::$app->get('request')->post($name, $defaultValue);
-}
-function get($name = null, $defaultValue = null) {
-    return Me::$app->get('request')->get($name, $defaultValue);
-}
