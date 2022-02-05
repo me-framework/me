@@ -25,14 +25,14 @@ class Request extends Component {
      * @return array [string $route, array $params]
      */
     public function resolve() {
-        /* @var $routeManager \me\components\RouteManager */
-        $routeManager = Me::$app->get('routeManager');
-
-        $result = $routeManager->parseRequest($this);
+        /* @var $urlManager \me\url\UrlManager */
+        $urlManager = Me::$app->get('urlManager');
+        $pathInfo   = $this->getPathInfo();
+        $method     = $this->getMethod();
+        $result     = $urlManager->parseRequest($pathInfo, $method);
         if ($result === false) {
             throw new Exception('Page Not Found');
         }
-
         list($route, $params) = $result;
         $_GET = $params + $_GET;
         return [$route, $this->get()];

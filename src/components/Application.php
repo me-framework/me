@@ -3,6 +3,7 @@ namespace me\components;
 use Me;
 use Exception;
 use me\core\Component;
+use me\url\UrlManager;
 /**
  * 
  */
@@ -39,9 +40,9 @@ class Application extends Component {
      * @var array Core Components
      */
     private $_corecomponents = [
-        'routeManager' => ['class' => RouteManager::class],
-        'request'      => ['class' => Request::class],
-        'response'     => ['class' => Response::class],
+        'urlManager' => ['class' => UrlManager::class],
+        'request'    => ['class' => Request::class],
+        'response'   => ['class' => Response::class],
     ];
     /**
      * @param array $config Application Config
