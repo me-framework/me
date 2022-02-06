@@ -40,9 +40,9 @@ class Application extends Component {
      * @var array Core Components
      */
     private $_corecomponents = [
-        'urlManager' => ['class' => UrlManager::class],
-        'request'    => ['class' => Request::class],
-        'response'   => ['class' => Response::class],
+        'url'      => ['class' => UrlManager::class],
+        'request'  => ['class' => Request::class],
+        'response' => ['class' => Response::class],
     ];
     /**
      * @param array $config Application Config
