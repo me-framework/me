@@ -66,7 +66,7 @@ class Module extends Component {
     public function get_module($id) {
 
         $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id)));
-        $className = $this->moduleNamespace . "\\$name\\Module";
+        $className = $this->moduleNamespace . "\\$name\\module";
 
         if (!class_exists($className) || !is_subclass_of($className, Module::class)) {
             return null;

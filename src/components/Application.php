@@ -4,6 +4,8 @@ use Me;
 use Exception;
 use me\core\Component;
 use me\url\UrlManager;
+use me\schema\SchemaManager;
+use me\database\DatabaseManager;
 /**
  * 
  */
@@ -23,7 +25,7 @@ class Application extends Component {
     /**
      * @var string Module Namespace
      */
-    public $moduleNamespace  = 'app\Modules';
+    public $moduleNamespace  = 'app\modules';
     /**
      * @var string Default Route
      */
@@ -43,6 +45,8 @@ class Application extends Component {
         'url'      => ['class' => UrlManager::class],
         'request'  => ['class' => Request::class],
         'response' => ['class' => Response::class],
+        'schema'   => ['class' => SchemaManager::class],
+        'database' => ['class' => DatabaseManager::class],
     ];
     /**
      * @param array $config Application Config
@@ -186,7 +190,7 @@ class Application extends Component {
         }
 
         $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id)));
-        $className = $this->moduleNamespace . "\\$name\\Module";
+        $className = $this->moduleNamespace . "\\$name\\module";
 
         if (!class_exists($className) || !is_subclass_of($className, Module::class)) {
             throw new Exception("Module { $className } Not Found", 11002);

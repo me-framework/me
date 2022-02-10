@@ -31,7 +31,7 @@ class Me {
                 $file = static::getAlias($file);
             }
         }
-        elseif (strpos($className, '\\') !== false) {
+        elseif (strpos($className, 'app') !== false) {
             $file = static::getAlias('@' . str_replace(['\\'], ['/'], $className) . '.php');
             if (is_null($file) || !is_file($file)) {
                 return;
