@@ -50,7 +50,7 @@ class Module extends Component {
             return $module->create_controller($route2);
         }
 
-        $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id))) . 'Controller';
+        $name      = str_replace('-', '_', strtolower($id)) . '_controller';
         $className = "$this->controllerNamespace\\$name";
         if (!class_exists($className) || !is_subclass_of($className, Controller::class)) {
             throw new Exception("Controller { $className } Not Found", 12001);
@@ -65,7 +65,7 @@ class Module extends Component {
      */
     public function get_module($id) {
 
-        $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id)));
+        $name      = str_replace('-', '_', strtolower($id));
         $className = $this->moduleNamespace . "\\$name\\module";
 
         if (!class_exists($className) || !is_subclass_of($className, Module::class)) {

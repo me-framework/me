@@ -38,7 +38,7 @@ class Controller extends Component {
      * @return \me\components\Action Action Object
      */
     public function create_action(string $action_id) {
-        $methodName = str_replace(' ', '', ucwords(str_replace('-', ' ', $action_id)));
+        $methodName = str_replace('-', '_', strtolower($action_id));
         if (method_exists($this, $methodName)) {
             $method = new ReflectionMethod($this, $methodName);
             if ($method->isPublic()) {

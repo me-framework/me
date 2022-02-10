@@ -189,7 +189,7 @@ class Application extends Component {
             $route2 = '';
         }
 
-        $name      = str_replace(' ', '', ucwords(str_replace('-', ' ', $id)));
+        $name      = str_replace('-', '_', strtolower($id));
         $className = $this->moduleNamespace . "\\$name\\module";
 
         if (!class_exists($className) || !is_subclass_of($className, Module::class)) {
