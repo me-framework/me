@@ -11,6 +11,15 @@ class Record extends Model implements RecordInterface {
      */
     protected static $connection;
     /**
+     * @var array attribute values indexed by attribute names
+     */
+    private $_attributes = [];
+    /**
+     * @var array|null old attribute values indexed by attribute names.
+     * This is `null` if the record [[isNewRecord|is new]].
+     */
+    private $_oldAttributes;
+    /**
      * @return \me\database\DatabaseManager Database Manager
      */
     private static function getDatabase() {
@@ -56,18 +65,9 @@ class Record extends Model implements RecordInterface {
     /**
      * 
      */
-    public static function primaryKeys() {
+    private static function primaryKeys() {
         return self::getTableSchema()->primaryKey;
     }
-    /**
-     * @var array attribute values indexed by attribute names
-     */
-    private $_attributes = [];
-    /**
-     * @var array|null old attribute values indexed by attribute names.
-     * This is `null` if the record [[isNewRecord|is new]].
-     */
-    private $_oldAttributes;
     /**
      * 
      */
@@ -136,22 +136,32 @@ class Record extends Model implements RecordInterface {
     protected static function findByCondition($condition) {
         $query = static::find();
         if (!ArrayHelper::isAssociative($condition)) {
-            $primaryKey = static::primaryKeys();
-            if (!isset($primaryKey[0])) {
+            $primaryKeys = self::primaryKeys();
+            if (!isset($primaryKeys[0])) {
                 throw new Exception('"' . get_called_class() . '" must have a primary key.');
             }
-            $condition = [$primaryKey[0] => is_array($condition) ? array_values($condition) : $condition];
+            $condition = [$primaryKeys[0] => is_array($condition) ? array_values($condition) : $condition];
         }
         return $query->andWhere($condition);
     }
-    public static function insertAll($columns, $rows) {
-        
-    }
+    /**
+     * @param array $columns
+     * @param array $condition
+     * @return int Affected Rows
+     */
     public static function updateAll($columns, $condition) {
-        
+        $connection = $this->getConnection();
+        [$sql, $params] = $this->getQueryBuilder()->update(static::tableName(), $columns, $condition);
+        return $this->getCommand()->execute($connection, $sql, $params);
     }
+    /**
+     * @param array $condition
+     * @return int Affected Rows
+     */
     public static function deleteAll($condition) {
-        
+        $connection = $this->getConnection();
+        [$sql, $params] = $this->getQueryBuilder()->delete(static::tableName(), $condition);
+        return $this->getCommand()->execute($connection, $sql, $params);
     }
     /**
      * @param bool $runValidation Run Validation
@@ -161,24 +171,24 @@ class Record extends Model implements RecordInterface {
         if ($runValidation && !$this->validate()) {
             return false;
         }
-
         if ($this->getIsNewRecord()) {
             return $this->insert();
         }
-
         return $this->update();
     }
     /**
      * @return bool
      */
     private function insert() {
+        $values     = $this->getDirtyAttributes();
+        
         $connection = $this->getConnection();
-        $values   = $this->getDirtyAttributes();
         [$sql, $params] = $this->getQueryBuilder()->insert(static::tableName(), $values);
-        $rowCount = $this->getCommand()->execute($connection, $sql, $params);
+        $rowCount   = $this->getCommand()->execute($connection, $sql, $params);
         if (!$rowCount) {
             return false;
         }
+        
         $tableSchema = self::getTableSchema();
         $primaryKeys = $tableSchema->primaryKey;
         $columns     = $tableSchema->columns;
@@ -197,15 +207,13 @@ class Record extends Model implements RecordInterface {
      * @return bool
      */
     private function update() {
-        $connection = $this->getConnection();
-        $values = $this->getDirtyAttributes();
-        $condition = $this->getOldPrimaryKey();
-        [$sql, $params] = $this->getQueryBuilder()->update(static::tableName(), $values, $condition);
-        $rowCount = $this->getCommand()->execute($connection, $sql, $params);
+        $columns   = $this->getDirtyAttributes();
+        $condition = $this->getOldPrimaryKeys();
+        $rowCount  = static::updateAll($columns, $condition);
         if (!$rowCount) {
             return false;
         }
-        foreach ($values as $name => $value) {
+        foreach ($columns as $name => $value) {
             $this->_oldAttributes[$name] = $value;
         }
         return true;
@@ -214,16 +222,17 @@ class Record extends Model implements RecordInterface {
      * @return bool
      */
     public function delete() {
-        $connection = $this->getConnection();
-        $condition = $this->getOldPrimaryKey();
-        [$sql, $params] = $this->getQueryBuilder()->delete(static::tableName(), $condition);
-        $rowCount = $this->getCommand()->execute($connection, $sql, $params);
+        $condition = $this->getOldPrimaryKeys();
+        $rowCount  = static::deleteAll($condition);
         if (!$rowCount) {
             return false;
         }
         $this->_oldAttributes = null;
         return true;
     }
+    /**
+     * 
+     */
     public function populate($row) {
         $columns = self::getTableSchema()->columns;
         foreach ($row as $name => $value) {
@@ -244,9 +253,15 @@ class Record extends Model implements RecordInterface {
     public function getIsNewRecord() {
         return $this->_oldAttributes === null;
     }
+    /**
+     * 
+     */
     public function fields() {
         return array_keys($this->_attributes);
     }
+    /**
+     * 
+     */
     private function getDirtyAttributes() {
         $attributes       = $this->attributes();
         $names            = array_flip($attributes);
@@ -267,13 +282,16 @@ class Record extends Model implements RecordInterface {
         }
         return $dirty_attributes;
     }
-    private function getOldPrimaryKey() {
-        $keys = static::primaryKeys();
-        if (empty($keys)) {
+    /**
+     * 
+     */
+    private function getOldPrimaryKeys() {
+        $primaryKeys = self::primaryKeys();
+        if (empty($primaryKeys)) {
             throw new Exception(get_class($this) . ' does not have a primary key. You should either define a primary key for the corresponding table or override the primaryKeys() method.');
         }
         $values = [];
-        foreach ($keys as $name) {
+        foreach ($primaryKeys as $name) {
             $values[$name] = isset($this->_oldAttributes[$name]) ? $this->_oldAttributes[$name] : null;
         }
         return $values;
