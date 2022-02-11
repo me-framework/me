@@ -4,7 +4,8 @@ use Me;
 use Exception;
 use me\model\Model;
 use me\helpers\ArrayHelper;
-class Record extends Model {
+use me\database\RecordInterface;
+class Record extends Model implements RecordInterface {
     /**
      * @var string Connection Name
      */
@@ -31,7 +32,7 @@ class Record extends Model {
      * @return \me\database\Schema Schema
      */
     private static function getSchema() {
-        return self::getDatabase()->getSchema(self::$connection);
+        return self::getDatabase()->getSchema(static::$connection);
     }
     /**
      * @param string $modelClass Model Class
@@ -58,10 +59,6 @@ class Record extends Model {
     public static function primaryKeys() {
         return self::getTableSchema()->primaryKey;
     }
-    //
-    //
-    //
-    //
     /**
      * @var array attribute values indexed by attribute names
      */
@@ -83,14 +80,6 @@ class Record extends Model {
     public function attributes() {
         return array_keys(self::getTableSchema()->columns);
     }
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //
     /**
      * 
      */
@@ -120,12 +109,8 @@ class Record extends Model {
             parent::__set($name, $value);
         }
     }
-    //
-    //
-    //
-    //
     /**
-     * @return \me\schema\Query Query
+     * @return \me\database\Query Query
      */
     public static function find() {
         return self::createQuery(get_called_class());
@@ -146,7 +131,7 @@ class Record extends Model {
     }
     /**
      * @param array|string $condition Condition
-     * @return \me\schema\Query Query
+     * @return \me\database\Query Query
      */
     protected static function findByCondition($condition) {
         $query = static::find();
@@ -159,7 +144,6 @@ class Record extends Model {
         }
         return $query->andWhere($condition);
     }
-    //
     public static function insertAll($columns, $rows) {
         
     }
@@ -169,10 +153,6 @@ class Record extends Model {
     public static function deleteAll($condition) {
         
     }
-    //
-    //
-    //
-    //
     /**
      * @param bool $runValidation Run Validation
      * @return bool
@@ -192,27 +172,23 @@ class Record extends Model {
      * @return bool
      */
     private function insert() {
-        $values = $this->getDirtyAttributes();
-
+        $values   = $this->getDirtyAttributes();
         [$sql, $params] = $this->getQueryBuilder()->insert(static::tableName(), $values);
         $rowCount = $this->getCommand()->execute($sql, $params);
         if (!$rowCount) {
             return false;
         }
-
         $tableSchema = self::getTableSchema();
         $primaryKeys = $tableSchema->primaryKey;
         $columns     = $tableSchema->columns;
         foreach ($primaryKeys as $name) {
             if ($columns[$name]->autoIncrement) {
-                $value = $this->getConnection()->lastInsertId($tableSchema->sequenceName);
-                $id    = $columns[$name]->phpTypecast($value);
-
+                $value                    = $this->getConnection()->lastInsertId($tableSchema->sequenceName);
+                $id                       = $columns[$name]->phpTypecast($value);
                 $this->_attributes[$name] = $id;
                 $values[$name]            = $id;
             }
         }
-
         $this->_oldAttributes = $values;
         return true;
     }
@@ -220,18 +196,31 @@ class Record extends Model {
      * @return bool
      */
     private function update() {
-        
+        $values = $this->getDirtyAttributes();
+        $condition = $this->getOldPrimaryKey();
+        [$sql, $params] = $this->getQueryBuilder()->update(static::tableName(), $values, $condition);
+        $rowCount = $this->getCommand()->execute($sql, $params);
+        if (!$rowCount) {
+            return false;
+        }
+        foreach ($values as $name => $value) {
+            $this->_oldAttributes[$name] = $value;
+        }
+        return true;
     }
     /**
      * @return bool
      */
     public function delete() {
-        
+        $condition = $this->getOldPrimaryKey();
+        [$sql, $params] = $this->getQueryBuilder()->delete(static::tableName(), $condition);
+        $rowCount = $this->getCommand()->execute($sql, $params);
+        if (!$rowCount) {
+            return false;
+        }
+        $this->_oldAttributes = null;
+        return true;
     }
-    //
-    //
-    //
-    //
     public function populate($row) {
         $columns = self::getTableSchema()->columns;
         foreach ($row as $name => $value) {
@@ -274,5 +263,16 @@ class Record extends Model {
             }
         }
         return $dirty_attributes;
+    }
+    private function getOldPrimaryKey() {
+        $keys = static::primaryKeys();
+        if (empty($keys)) {
+            throw new Exception(get_class($this) . ' does not have a primary key. You should either define a primary key for the corresponding table or override the primaryKeys() method.');
+        }
+        $values = [];
+        foreach ($keys as $name) {
+            $values[$name] = isset($this->_oldAttributes[$name]) ? $this->_oldAttributes[$name] : null;
+        }
+        return $values;
     }
 }
