@@ -1,5 +1,5 @@
 <?php
-namespace me\schema;
+namespace me;
 use Me;
 use Exception;
 use me\model\Model;
