@@ -115,9 +115,8 @@ class Application extends Component {
             $code      = $exc->getCode();
             $file      = $exc->getFile();
             $line      = $exc->getLine();
-            $exception = get_class($exc);
             $message   = $exc->getMessage();
-            $this->handle_error($code, $file, $line, $message, $exception);
+            $this->handle_error($code, $file, $line, $message);
         });
         set_error_handler(function ($code, $message, $file, $line) {
             $this->handle_error($code, $file, $line, $message);
@@ -127,16 +126,12 @@ class Application extends Component {
     /**
      * @return void
      */
-    public function handle_error($code, $file, $line, $message, $exception = null) {
-        $data = ['done' => false, 'messages' => ['خطای سرور']];
+    public function handle_error($code, $file, $line, $message) {
+        $data = ['done' => false, 'code' => $code, 'message' => 'خطای سرور'];
         if (ME_DEBUG) {
-            $data['messages'] = [$message];
-            $data['code']     = $code;
+            $data['message'] = $message;
             $data['file']     = $file;
             $data['line']     = $line;
-            if (!is_null($exception)) {
-                $data['exception'] = $exception;
-            }
         }
         /* @var $response \me\components\Response */
         $response       = $this->get('response');
@@ -149,13 +144,13 @@ class Application extends Component {
     public function handle_request() {
         list($route, $params) = $this->get('request')->resolve();
 
-        $result = $this->handle_action($route, $params);
-        if ($result instanceof Response) {
-            $result->send();
+        $data = $this->handle_action($route, $params);
+        if ($data instanceof Response) {
+            $data->send();
         }
 
         $response       = $this->get('response');
-        $response->data = ['done' => true, 'data' => $result];
+        $response->data = ['done' => true, 'data' => $data];
         $response->send();
     }
     /**

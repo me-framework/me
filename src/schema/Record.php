@@ -172,4 +172,7 @@ class Record extends Model {
     public function getIsNewRecord() {
         return $this->_oldAttributes === null;
     }
+    public function fields() {
+        return array_keys($this->_attributes);
+    }
 }
