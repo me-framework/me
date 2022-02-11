@@ -19,38 +19,38 @@ class Record extends Model {
      * @return \me\database\Connection Connection
      */
     private static function getConnection() {
-        return $this->getDatabase()->getConnection(static::$connection);
+        return self::getDatabase()->getConnection(static::$connection);
     }
     /**
      * @return \me\database\Command Command
      */
     private static function getCommand() {
-        return $this->getDatabase()->getCommand();
+        return self::getDatabase()->getCommand();
     }
     /**
      * @return \me\database\Schema Schema
      */
     private static function getSchema() {
-        return $this->getDatabase()->getSchema(self::$connection);
+        return self::getDatabase()->getSchema(self::$connection);
     }
     /**
      * @param string $modelClass Model Class
      * @return \me\database\Query Query
      */
     private static function createQuery($modelClass) {
-        return $this->getSchema()->createQuery($modelClass);
+        return self::getSchema()->createQuery($modelClass);
     }
     /**
      * @return \me\database\QueryBuilder Query Builder
      */
     private static function getQueryBuilder() {
-        return $this->getSchema()->getQueryBuilder();
+        return self::getSchema()->getQueryBuilder();
     }
     /**
      * @return \me\database\TableSchema Table Schema
      */
     private static function getTableSchema() {
-        return $this->getSchema()->getTableSchema(static::tableName());
+        return self::getSchema()->getTableSchema(static::tableName());
     }
     /**
      * 
