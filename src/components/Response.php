@@ -1,6 +1,7 @@
 <?php
 namespace me\components;
 use me\core\Component;
+use me\helpers\JsonHelper;
 class Response extends Component {
     public $code    = 200;
     public $data    = [];
@@ -12,7 +13,7 @@ class Response extends Component {
         foreach ($this->headers as $key => $value) {
             header("$key:$value");
         }
-        echo json_encode($this->data);
+        echo JsonHelper::encode($this->data);
         exit;
     }
 }
