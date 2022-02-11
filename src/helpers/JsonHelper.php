@@ -1,37 +1,38 @@
 <?php
 namespace me\helpers;
 use stdClass;
+use Exception;
 use me\model\Model;
 class JsonHelper {
     public static function encode($value) {
-        $expressions = [];
-        $value       = static::processData($value, $expressions, uniqid('', true));
-        $json        = json_encode($value);
-        return $expressions === [] ? $json : strtr($json, $expressions);
+        $array = static::processData($value);
+        $json  = json_encode($array);
+        return $json;
     }
-    protected static function processData($data, &$expressions, $expPrefix) {
+    public static function decode($json, $asArray = true) {
+        if (is_array($json)) {
+            throw new Exception('Invalid JSON data.');
+        }
+        elseif ($json === null || $json === '') {
+            return null;
+        }
+        $decode = json_decode((string) $json, $asArray);
+        return $decode;
+    }
+    protected static function processData($data) {
         if (is_object($data)) {
-
             /*
-              if ($data instanceof JsExpression) {
-              $token                           = "!{[$expPrefix=" . count($expressions) . ']}!';
-              $expressions['"' . $token . '"'] = $data->expression;
-
-              return $token;
-              }
               if ($data instanceof \JsonSerializable) {
-              return static::processData($data->jsonSerialize(), $expressions, $expPrefix);
+              return static::processData($data->jsonSerialize());
               }
               if ($data instanceof \DateTimeInterface) {
-              return static::processData((array) $data, $expressions, $expPrefix);
+              return static::processData((array) $data);
               }
              */
-
             //if ($data instanceof \SimpleXMLElement) {
             //    $data = (array) $data;
             //}
             //else 
-
             if ($data instanceof Model) {
                 $data = $data->toArray();
             }
@@ -49,7 +50,7 @@ class JsonHelper {
         if (is_array($data)) {
             foreach ($data as $key => $value) {
                 if (is_array($value) || is_object($value)) {
-                    $data[$key] = static::processData($value, $expressions, $expPrefix);
+                    $data[$key] = static::processData($value);
                 }
             }
         }

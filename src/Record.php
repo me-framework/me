@@ -10,6 +10,59 @@ class Record extends Model {
      */
     protected static $connection;
     /**
+     * @return \me\database\DatabaseManager Database Manager
+     */
+    private static function getDatabase() {
+        return Me::$app->get('database');
+    }
+    /**
+     * @return \me\database\Connection Connection
+     */
+    private static function getConnection() {
+        return $this->getDatabase()->getConnection(static::$connection);
+    }
+    /**
+     * @return \me\database\Command Command
+     */
+    private static function getCommand() {
+        return $this->getDatabase()->getCommand();
+    }
+    /**
+     * @return \me\database\Schema Schema
+     */
+    private static function getSchema() {
+        return $this->getDatabase()->getSchema(self::$connection);
+    }
+    /**
+     * @param string $modelClass Model Class
+     * @return \me\database\Query Query
+     */
+    private static function createQuery($modelClass) {
+        return $this->getSchema()->createQuery($modelClass);
+    }
+    /**
+     * @return \me\database\QueryBuilder Query Builder
+     */
+    private static function getQueryBuilder() {
+        return $this->getSchema()->getQueryBuilder();
+    }
+    /**
+     * @return \me\database\TableSchema Table Schema
+     */
+    private static function getTableSchema() {
+        return $this->getSchema()->getTableSchema(static::tableName());
+    }
+    /**
+     * 
+     */
+    public static function primaryKeys() {
+        return self::getTableSchema()->primaryKey;
+    }
+    //
+    //
+    //
+    //
+    /**
      * @var array attribute values indexed by attribute names
      */
     private $_attributes = [];
@@ -27,23 +80,17 @@ class Record extends Model {
     /**
      * 
      */
-    public static function getTableSchema() {
-        /* @var $schema SchemaManager */
-        $schema = Me::$app->get('schema');
-        return $schema->getTableSchema(static::tableName(), static::$connection);
-    }
-    /**
-     * 
-     */
-    public static function primaryKeys() {
-        return static::getTableSchema()->primaryKey;
-    }
-    /**
-     * 
-     */
     public function attributes() {
-        return array_keys(static::getTableSchema()->columns);
+        return array_keys(self::getTableSchema()->columns);
     }
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
     /**
      * 
      */
@@ -73,11 +120,15 @@ class Record extends Model {
             parent::__set($name, $value);
         }
     }
+    //
+    //
+    //
+    //
     /**
      * @return \me\schema\Query Query
      */
     public static function find() {
-        return new Query(['modelClass' => get_called_class(), 'connection' => static::$connection]);
+        return self::createQuery(get_called_class());
     }
     /**
      * @param array|string $condition Condition
@@ -118,6 +169,10 @@ class Record extends Model {
     public static function deleteAll($condition) {
         
     }
+    //
+    //
+    //
+    //
     /**
      * @param bool $runValidation Run Validation
      * @return bool
@@ -137,7 +192,29 @@ class Record extends Model {
      * @return bool
      */
     private function insert() {
-        
+        $values = $this->getDirtyAttributes();
+
+        [$sql, $params] = $this->getQueryBuilder()->insert(static::tableName(), $values);
+        $rowCount = $this->getCommand()->execute($sql, $params);
+        if (!$rowCount) {
+            return false;
+        }
+
+        $tableSchema = self::getTableSchema();
+        $primaryKeys = $tableSchema->primaryKey;
+        $columns     = $tableSchema->columns;
+        foreach ($primaryKeys as $name) {
+            if ($columns[$name]->autoIncrement) {
+                $value = $this->getConnection()->lastInsertId($tableSchema->sequenceName);
+                $id    = $columns[$name]->phpTypecast($value);
+
+                $this->_attributes[$name] = $id;
+                $values[$name]            = $id;
+            }
+        }
+
+        $this->_oldAttributes = $values;
+        return true;
     }
     /**
      * @return bool
@@ -152,8 +229,11 @@ class Record extends Model {
         
     }
     //
+    //
+    //
+    //
     public function populate($row) {
-        $columns = static::getTableSchema()->columns;
+        $columns = self::getTableSchema()->columns;
         foreach ($row as $name => $value) {
             if (isset($columns[$name])) {
                 $this->_attributes[$name] = $columns[$name]->phpTypecast($value);
@@ -174,5 +254,25 @@ class Record extends Model {
     }
     public function fields() {
         return array_keys($this->_attributes);
+    }
+    private function getDirtyAttributes() {
+        $attributes       = $this->attributes();
+        $names            = array_flip($attributes);
+        $dirty_attributes = [];
+        if ($this->_oldAttributes === null) {
+            foreach ($this->_attributes as $name => $value) {
+                if (isset($names[$name])) {
+                    $dirty_attributes[$name] = $value;
+                }
+            }
+        }
+        else {
+            foreach ($this->_attributes as $name => $value) {
+                if (isset($names[$name]) && (!array_key_exists($name, $this->_oldAttributes) || $value !== $this->_oldAttributes[$name])) {
+                    $dirty_attributes[$name] = $value;
+                }
+            }
+        }
+        return $dirty_attributes;
     }
 }
