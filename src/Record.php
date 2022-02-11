@@ -172,9 +172,10 @@ class Record extends Model implements RecordInterface {
      * @return bool
      */
     private function insert() {
+        $connection = $this->getConnection();
         $values   = $this->getDirtyAttributes();
         [$sql, $params] = $this->getQueryBuilder()->insert(static::tableName(), $values);
-        $rowCount = $this->getCommand()->execute($sql, $params);
+        $rowCount = $this->getCommand()->execute($connection, $sql, $params);
         if (!$rowCount) {
             return false;
         }
@@ -196,10 +197,11 @@ class Record extends Model implements RecordInterface {
      * @return bool
      */
     private function update() {
+        $connection = $this->getConnection();
         $values = $this->getDirtyAttributes();
         $condition = $this->getOldPrimaryKey();
         [$sql, $params] = $this->getQueryBuilder()->update(static::tableName(), $values, $condition);
-        $rowCount = $this->getCommand()->execute($sql, $params);
+        $rowCount = $this->getCommand()->execute($connection, $sql, $params);
         if (!$rowCount) {
             return false;
         }
@@ -212,9 +214,10 @@ class Record extends Model implements RecordInterface {
      * @return bool
      */
     public function delete() {
+        $connection = $this->getConnection();
         $condition = $this->getOldPrimaryKey();
         [$sql, $params] = $this->getQueryBuilder()->delete(static::tableName(), $condition);
-        $rowCount = $this->getCommand()->execute($sql, $params);
+        $rowCount = $this->getCommand()->execute($connection, $sql, $params);
         if (!$rowCount) {
             return false;
         }
