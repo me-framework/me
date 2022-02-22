@@ -1,6 +1,6 @@
 <?php
 namespace me\helpers;
-use me\core\Component;
-class StringHelper extends Component {
+use me\core\helpers\StringHelper as BaseStringHelper;
+class StringHelper extends BaseStringHelper {
     
 }

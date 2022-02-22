@@ -2,6 +2,7 @@
 namespace me;
 use Me;
 use Exception;
+use me\core\Cache;
 use me\model\Model;
 use me\helpers\ArrayHelper;
 use me\database\RecordInterface;
@@ -13,78 +14,63 @@ class Record extends Model implements RecordInterface {
     /**
      * @var array attribute values indexed by attribute names
      */
-    private $_attributes = [];
+    protected $_attributes = [];
     /**
      * @var array|null old attribute values indexed by attribute names.
      * This is `null` if the record [[isNewRecord|is new]].
      */
-    private $_oldAttributes;
+    protected $_oldAttributes;
+    //
+    //
+    //
+    //
     /**
-     * @return \me\database\DatabaseManager Database Manager
+     * @param bool $runValidation Run Validation
+     * @return bool
      */
-    private static function getDatabase() {
-        return Me::$app->get('database');
+    public function save($runValidation = true) {
+        if ($runValidation && !$this->validate()) {
+            return false;
+        }
+        if ($this->getIsNewRecord()) {
+            return $this->insert();
+        }
+        return $this->update();
     }
     /**
-     * @return \me\database\Connection Connection
+     * @return bool
      */
-    private static function getConnection() {
-        return self::getDatabase()->getConnection(static::$connection);
-    }
-    /**
-     * @return \me\database\Command Command
-     */
-    private static function getCommand() {
-        return self::getDatabase()->getCommand();
-    }
-    /**
-     * @return \me\database\Schema Schema
-     */
-    private static function getSchema() {
-        return self::getDatabase()->getSchema(static::$connection);
-    }
-    /**
-     * @param string $modelClass Model Class
-     * @return \me\database\Query Query
-     */
-    private static function createQuery($modelClass) {
-        return self::getSchema()->createQuery($modelClass);
-    }
-    /**
-     * @return \me\database\QueryBuilder Query Builder
-     */
-    private static function getQueryBuilder() {
-        return self::getSchema()->getQueryBuilder();
-    }
-    /**
-     * @return \me\database\TableSchema Table Schema
-     */
-    private static function getTableSchema() {
-        return self::getSchema()->getTableSchema(static::tableName());
+    public function delete() {
+        $condition = $this->getOldPrimaryKeys();
+        $rowCount  = static::deleteAll($condition);
+        if (!$rowCount) {
+            return false;
+        }
+        $this->_oldAttributes = null;
+        return true;
     }
     /**
      * 
      */
-    private static function primaryKeys() {
-        return self::getTableSchema()->primaryKey;
+    public function populate($row) {
+        $columns = static::getTableSchema()->columns;
+        foreach ($row as $name => $value) {
+            if (isset($columns[$name])) {
+                $this->_attributes[$name] = $columns[$name]->phpTypecast($value);
+            }
+            //elseif ($this->canSetProperty($name)) {
+            //    $this->$name = $columns[$name]->phpTypecast($value);
+            //}
+        }
+        $this->_oldAttributes = $this->_attributes;
+        return $this;
     }
     /**
      * 
      */
-    public static function tableName() {
-        return basename(get_called_class());
-    }
-    /**
-     * 
-     */
-    public function attributes() {
-        return array_keys(self::getTableSchema()->columns);
-    }
-    /**
-     * 
-     */
-    public function hasAttribute($name) {
-        return isset($this->_attributes[$name]) || in_array($name, $this->attributes(), true);
+    public function addMany($attribute, $many) {
+        $key = $this->getKey();
+        Cache::setCache([$key, 'many', $attribute], $many);
     }
     /**
      * 
@@ -109,11 +95,21 @@ class Record extends Model implements RecordInterface {
             parent::__set($name, $value);
         }
     }
+    //
+    //
+    //
+    //
+    /**
+     * 
+     */
+    public static function tableName() {
+        return basename(get_called_class());
+    }
     /**
      * @return \me\database\Query Query
      */
     public static function find() {
-        return self::createQuery(get_called_class());
+        return static::createQuery(get_called_class());
     }
     /**
      * @param array|string $condition Condition
@@ -130,66 +126,40 @@ class Record extends Model implements RecordInterface {
         return static::findByCondition($condition)->all();
     }
     /**
-     * @param array|string $condition Condition
-     * @return \me\database\Query Query
-     */
-    protected static function findByCondition($condition) {
-        $query = static::find();
-        if (!ArrayHelper::isAssociative($condition)) {
-            $primaryKeys = self::primaryKeys();
-            if (!isset($primaryKeys[0])) {
-                throw new Exception('"' . get_called_class() . '" must have a primary key.');
-            }
-            $condition = [$primaryKeys[0] => is_array($condition) ? array_values($condition) : $condition];
-        }
-        return $query->andWhere($condition);
-    }
-    /**
      * @param array $columns
      * @param array $condition
      * @return int Affected Rows
      */
     public static function updateAll($columns, $condition) {
-        $connection = $this->getConnection();
-        [$sql, $params] = $this->getQueryBuilder()->update(static::tableName(), $columns, $condition);
-        return $this->getCommand()->execute($connection, $sql, $params);
+        $connection = static::getConnection();
+        [$sql, $params] = static::getQueryBuilder()->update(static::tableName(), $columns, $condition);
+        return static::getCommand()->execute($connection, $sql, $params);
     }
     /**
      * @param array $condition
      * @return int Affected Rows
      */
     public static function deleteAll($condition) {
-        $connection = $this->getConnection();
-        [$sql, $params] = $this->getQueryBuilder()->delete(static::tableName(), $condition);
-        return $this->getCommand()->execute($connection, $sql, $params);
+        $connection = static::getConnection();
+        [$sql, $params] = static::getQueryBuilder()->delete(static::tableName(), $condition);
+        return static::getCommand()->execute($connection, $sql, $params);
     }
-    /**
-     * @param bool $runValidation Run Validation
-     * @return bool
-     */
-    public function save($runValidation = true) {
-        if ($runValidation && !$this->validate()) {
-            return false;
-        }
-        if ($this->getIsNewRecord()) {
-            return $this->insert();
-        }
-        return $this->update();
-    }
+    //
+    //
+    //
+    //
     /**
      * @return bool
      */
-    private function insert() {
+    protected function insert() {
         $values     = $this->getDirtyAttributes();
-        
         $connection = $this->getConnection();
         [$sql, $params] = $this->getQueryBuilder()->insert(static::tableName(), $values);
         $rowCount   = $this->getCommand()->execute($connection, $sql, $params);
         if (!$rowCount) {
             return false;
         }
-        
-        $tableSchema = self::getTableSchema();
+        $tableSchema = static::getTableSchema();
         $primaryKeys = $tableSchema->primaryKey;
         $columns     = $tableSchema->columns;
         foreach ($primaryKeys as $name) {
@@ -201,68 +171,57 @@ class Record extends Model implements RecordInterface {
             }
         }
         $this->_oldAttributes = $values;
+        $this->many();
         return true;
     }
     /**
      * @return bool
      */
-    private function update() {
-        $columns   = $this->getDirtyAttributes();
-        $condition = $this->getOldPrimaryKeys();
-        $rowCount  = static::updateAll($columns, $condition);
-        if (!$rowCount) {
-            return false;
-        }
-        foreach ($columns as $name => $value) {
-            $this->_oldAttributes[$name] = $value;
-        }
-        return true;
-    }
-    /**
-     * @return bool
-     */
-    public function delete() {
-        $condition = $this->getOldPrimaryKeys();
-        $rowCount  = static::deleteAll($condition);
-        if (!$rowCount) {
-            return false;
-        }
-        $this->_oldAttributes = null;
-        return true;
-    }
-    /**
-     * 
-     */
-    public function populate($row) {
-        $columns = self::getTableSchema()->columns;
-        foreach ($row as $name => $value) {
-            if (isset($columns[$name])) {
-                $this->_attributes[$name] = $columns[$name]->phpTypecast($value);
+    protected function update() {
+        $columns = $this->getDirtyAttributes();
+        if ($columns) {
+            $condition = $this->getOldPrimaryKeys();
+            $rowCount  = static::updateAll($columns, $condition);
+            if (!$rowCount) {
+                return false;
             }
-            //elseif ($this->canSetProperty($name)) {
-            //    $this->$name = $columns[$name]->phpTypecast($value);
-            //}
+            foreach ($columns as $name => $value) {
+                $this->_oldAttributes[$name] = $value;
+            }
         }
-        $this->_oldAttributes = $this->_attributes;
-        return $this;
-    }
-    /**
-     * Returns a value indicating whether the current record is new.
-     * @return bool whether the record is new and should be inserted when calling [[save()]].
-     */
-    public function getIsNewRecord() {
-        return $this->_oldAttributes === null;
+        $this->many();
+        return true;
     }
     /**
      * 
      */
-    public function fields() {
-        return array_keys($this->_attributes);
+    protected function many() {
+        $key  = $this->getKey();
+        $many = Cache::getCache([$key, 'many'], []);
+        foreach ($many as $attribute => $validator) {
+            /* @var $validator validators\many */
+            /* @var $models Record[] */
+            $source_id_name  = $validator->sourceAttribute;
+            $source_id       = $this->$source_id_name;
+            $dest_field_name = $validator->destAttribute;
+            $dest_id_name    = $validator->destKey;
+            $class_name      = $validator->targetClass;
+            $ids             = [];
+            $items           = [];
+            $models          = $this->$attribute;
+            foreach ($models as $model) {
+                $model->$dest_field_name = $source_id;
+                $model->save();
+                $ids[]                   = $model->$dest_id_name;
+                $items[]                 = $model;
+            }
+            $class_name::deleteAll(['and', [$dest_field_name => $source_id], ['not in', $dest_id_name, $ids]]);
+        }
     }
     /**
      * 
      */
-    private function getDirtyAttributes() {
+    protected function getDirtyAttributes() {
         $attributes       = $this->attributes();
         $names            = array_flip($attributes);
         $dirty_attributes = [];
@@ -285,8 +244,8 @@ class Record extends Model implements RecordInterface {
     /**
      * 
      */
-    private function getOldPrimaryKeys() {
-        $primaryKeys = self::primaryKeys();
+    protected function getOldPrimaryKeys() {
+        $primaryKeys = static::primaryKeys();
         if (empty($primaryKeys)) {
             throw new Exception(get_class($this) . ' does not have a primary key. You should either define a primary key for the corresponding table or override the primaryKeys() method.');
         }
@@ -295,5 +254,108 @@ class Record extends Model implements RecordInterface {
             $values[$name] = isset($this->_oldAttributes[$name]) ? $this->_oldAttributes[$name] : null;
         }
         return $values;
+    }
+    /**
+     * @return bool
+     */
+    protected function getIsNewRecord() {
+        return $this->_oldAttributes === null;
+    }
+    /**
+     * 
+     */
+    protected function hasAttribute($name) {
+        return isset($this->_attributes[$name]) || in_array($name, $this->attributes(), true);
+    }
+    /**
+     * 
+     */
+    protected function getValidatorsMap() {
+        return array_merge(parent::getValidatorsMap(), [
+            'exists' => 'me\validators\exists',
+            'many'   => 'me\validators\many',
+            'sync'   => 'me\validators\sync',
+            'unique' => 'me\validators\unique',
+        ]);
+    }
+    /**
+     * 
+     */
+    protected function attributes() {
+        return array_keys(static::getTableSchema()->columns);
+    }
+    /**
+     * 
+     */
+    protected function fields() {
+        return array_keys($this->_attributes);
+    }
+    //
+    //
+    //
+    //
+    /**
+     * @return \me\database\DatabaseManager Database Manager
+     */
+    protected static function getDatabase() {
+        return Me::$app->get('database');
+    }
+    /**
+     * @return \me\database\Connection Connection
+     */
+    protected static function getConnection() {
+        return static::getDatabase()->getConnection(static::$connection);
+    }
+    /**
+     * @return \me\database\Command Command
+     */
+    protected static function getCommand() {
+        return static::getDatabase()->getCommand();
+    }
+    /**
+     * @return \me\database\Schema Schema
+     */
+    protected static function getSchema() {
+        return static::getDatabase()->getSchema(static::$connection);
+    }
+    /**
+     * @param string $modelClass Model Class
+     * @return \me\database\Query Query
+     */
+    protected static function createQuery($modelClass) {
+        return static::getSchema()->createQuery($modelClass);
+    }
+    /**
+     * @return \me\database\QueryBuilder Query Builder
+     */
+    protected static function getQueryBuilder() {
+        return static::getSchema()->getQueryBuilder();
+    }
+    /**
+     * @return \me\database\TableSchema Table Schema
+     */
+    protected static function getTableSchema() {
+        return static::getSchema()->getTableSchema(static::tableName());
+    }
+    /**
+     * 
+     */
+    protected static function primaryKeys() {
+        return static::getTableSchema()->primaryKey;
+    }
+    /**
+     * @param array|string $condition Condition
+     * @return \me\database\Query Query
+     */
+    protected static function findByCondition($condition) {
+        $query = static::find();
+        if (!ArrayHelper::isAssociative($condition)) {
+            $primaryKeys = static::primaryKeys();
+            if (!isset($primaryKeys[0])) {
+                throw new Exception('"' . get_called_class() . '" must have a primary key.');
+            }
+            $condition = [$primaryKeys[0] => is_array($condition) ? array_values($condition) : $condition];
+        }
+        return $query->andWhere($condition);
     }
 }
