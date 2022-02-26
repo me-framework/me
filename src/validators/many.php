@@ -2,6 +2,8 @@
 namespace me\validators;
 use Exception;
 use me\model\Validator;
+use me\Record;
+use me\core\Cache;
 class many extends Validator {
     /**
      * @var string the name of the Record class
@@ -40,8 +42,9 @@ class many extends Validator {
     /**
      * @param \me\Record $model Model
      * @param string $attribute Attribute Name
+     * @param string $modelKey
      */
-    public function validateAttribute($model, $attribute) {
+    public function validateAttribute($model, $attribute, $modelKey) {
         if ($this->targetClass === null) {
             throw new Exception('The "targetClass" property must be set.');
         }
@@ -57,7 +60,6 @@ class many extends Validator {
 
         $rows = $model->$attribute;
         if ($rows === null) {
-            $model->addMany($attribute, [$this, []]);
             return;
         }
         if (!is_array($rows)) {
@@ -74,33 +76,31 @@ class many extends Validator {
 
         $classes = [];
         foreach ($rows as $index => $row) {
-
-            unset($row[$dest_field_name]);
-
             /* @var $class \me\Record */
             $class = null;
-            if ($source_id && isset($row[$dest_id_name])) {
-                $class = $class_name::findOne([
-                            $dest_id_name    => $row[$dest_id_name],
-                            $dest_field_name => $source_id
-                ]);
+            if ($row instanceof Record) {
+                $class = $row;
             }
-
-            unset($row[$dest_id_name]);
-
-            if ($class === null) {
-                $class = new $class_name();
+            else {
+                unset($row[$dest_field_name]);
+                if ($source_id && isset($row[$dest_id_name])) {
+                    $class = $class_name::findOne([
+                                $dest_id_name    => $row[$dest_id_name],
+                                $dest_field_name => $source_id
+                    ]);
+                }
+                unset($row[$dest_id_name]);
+                if ($class === null) {
+                    $class = new $class_name();
+                }
+                $class->load($row);
             }
-
-            $class->load($row);
-
             if (!$class->validate(true, null, [$dest_field_name])) {
                 $model->addErrors($attribute . '.' . $index, $class->getErrors());
             }
-
             $classes[] = $class;
         }
         $model->$attribute = $classes;
-        $model->addMany($attribute, $this);
+        Cache::setCache([$modelKey, 'many', $attribute], $this);
     }
 }

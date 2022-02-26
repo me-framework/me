@@ -42,7 +42,7 @@ class Record extends Model implements RecordInterface {
      */
     public function delete() {
         $condition = $this->getOldPrimaryKeys();
-        $rowCount  = static::deleteAll($condition);
+        $rowCount  = $this->deleteAll($condition);
         if (!$rowCount) {
             return false;
         }
@@ -53,7 +53,7 @@ class Record extends Model implements RecordInterface {
      * 
      */
     public function populate($row) {
-        $columns = static::getTableSchema()->columns;
+        $columns = $this->columns();
         foreach ($row as $name => $value) {
             if (isset($columns[$name])) {
                 $this->_attributes[$name] = $columns[$name]->phpTypecast($value);
@@ -68,18 +68,11 @@ class Record extends Model implements RecordInterface {
     /**
      * 
      */
-    public function addMany($attribute, $many) {
-        $key = $this->getKey();
-        Cache::setCache([$key, 'many', $attribute], $many);
-    }
-    /**
-     * 
-     */
     public function __get($name) {
-        if (isset($this->_attributes[$name]) || array_key_exists($name, $this->_attributes)) {
+        if (array_key_exists($name, $this->_attributes)) {
             return $this->_attributes[$name];
         }
-        if ($this->hasAttribute($name)) {
+        if (array_key_exists($name, $this->columns()) || array_key_exists($name, $this->rules())) {
             return null;
         }
         return parent::__get($name);
@@ -88,7 +81,7 @@ class Record extends Model implements RecordInterface {
      * 
      */
     public function __set($name, $value) {
-        if ($this->hasAttribute($name)) {
+        if (array_key_exists($name, $this->columns()) || array_key_exists($name, $this->rules())) {
             $this->_attributes[$name] = $value;
         }
         else {
@@ -154,24 +147,23 @@ class Record extends Model implements RecordInterface {
     protected function insert() {
         $values     = $this->getDirtyAttributes();
         $connection = $this->getConnection();
-        [$sql, $params] = $this->getQueryBuilder()->insert(static::tableName(), $values);
+        [$sql, $params] = $this->getQueryBuilder()->insert($this->tableName(), $values);
         $rowCount   = $this->getCommand()->execute($connection, $sql, $params);
         if (!$rowCount) {
             return false;
         }
-        $tableSchema = static::getTableSchema();
-        $primaryKeys = $tableSchema->primaryKey;
-        $columns     = $tableSchema->columns;
+        $primaryKeys = $this->primaryKeys();
+        $columns     = $this->columns();
         foreach ($primaryKeys as $name) {
             if ($columns[$name]->autoIncrement) {
-                $value                    = $this->getConnection()->lastInsertId($tableSchema->sequenceName);
+                $value                    = $this->getConnection()->lastInsertId($this->getTableSchema()->sequenceName);
                 $id                       = $columns[$name]->phpTypecast($value);
                 $this->_attributes[$name] = $id;
                 $values[$name]            = $id;
             }
         }
         $this->_oldAttributes = $values;
-        $this->many();
+        $this->relations();
         return true;
     }
     /**
@@ -181,7 +173,7 @@ class Record extends Model implements RecordInterface {
         $columns = $this->getDirtyAttributes();
         if ($columns) {
             $condition = $this->getOldPrimaryKeys();
-            $rowCount  = static::updateAll($columns, $condition);
+            $rowCount  = $this->updateAll($columns, $condition);
             if (!$rowCount) {
                 return false;
             }
@@ -189,15 +181,21 @@ class Record extends Model implements RecordInterface {
                 $this->_oldAttributes[$name] = $value;
             }
         }
-        $this->many();
+        $this->relations();
         return true;
     }
     /**
      * 
      */
+    protected function relations() {
+        $this->many();
+        $this->sync();
+    }
+    /**
+     * 
+     */
     protected function many() {
-        $key  = $this->getKey();
-        $many = Cache::getCache([$key, 'many'], []);
+        $many = Cache::getCache([$this->_key, 'many'], []);
         foreach ($many as $attribute => $validator) {
             /* @var $validator validators\many */
             /* @var $models Record[] */
@@ -207,13 +205,11 @@ class Record extends Model implements RecordInterface {
             $dest_id_name    = $validator->destKey;
             $class_name      = $validator->targetClass;
             $ids             = [];
-            $items           = [];
             $models          = $this->$attribute;
             foreach ($models as $model) {
                 $model->$dest_field_name = $source_id;
                 $model->save();
                 $ids[]                   = $model->$dest_id_name;
-                $items[]                 = $model;
             }
             $class_name::deleteAll(['and', [$dest_field_name => $source_id], ['not in', $dest_id_name, $ids]]);
         }
@@ -221,31 +217,52 @@ class Record extends Model implements RecordInterface {
     /**
      * 
      */
+    protected function sync() {
+        $sync = Cache::getCache([$this->_key, 'sync'], []);
+        foreach ($sync as [$validator, $models]) {
+            /* @var $validator validators\sync */
+            /* @var $models Record[] */
+            $relation_class     = $validator->relation_class;
+            $source_id_name     = $validator->source_id;
+            $source_id          = $this->$source_id_name;
+            $relation_source_id = $validator->relation_source_id;
+            $relation_target_id = $validator->relation_target_id;
+            $ids                = [];
+            foreach ($models as $model) {
+                $model->$relation_source_id = $source_id;
+                $model->save();
+                $ids[]                      = $model->$relation_target_id;
+            }
+            $relation_class::deleteAll(['and', [$relation_source_id => $source_id], ['not in', $relation_target_id, $ids]]);
+        }
+    }
+    /**
+     * 
+     */
     protected function getDirtyAttributes() {
-        $attributes       = $this->attributes();
-        $names            = array_flip($attributes);
-        $dirty_attributes = [];
+        $columns    = $this->columns();
+        $attributes = [];
         if ($this->_oldAttributes === null) {
             foreach ($this->_attributes as $name => $value) {
-                if (isset($names[$name])) {
-                    $dirty_attributes[$name] = $value;
+                if (isset($columns[$name])) {
+                    $attributes[$name] = $value;
                 }
             }
         }
         else {
             foreach ($this->_attributes as $name => $value) {
-                if (isset($names[$name]) && (!array_key_exists($name, $this->_oldAttributes) || $value !== $this->_oldAttributes[$name])) {
-                    $dirty_attributes[$name] = $value;
+                if (isset($columns[$name]) && (!array_key_exists($name, $this->_oldAttributes) || $value !== $this->_oldAttributes[$name])) {
+                    $attributes[$name] = $value;
                 }
             }
         }
-        return $dirty_attributes;
+        return $attributes;
     }
     /**
      * 
      */
     protected function getOldPrimaryKeys() {
-        $primaryKeys = static::primaryKeys();
+        $primaryKeys = $this->primaryKeys();
         if (empty($primaryKeys)) {
             throw new Exception(get_class($this) . ' does not have a primary key. You should either define a primary key for the corresponding table or override the primaryKeys() method.');
         }
@@ -264,12 +281,6 @@ class Record extends Model implements RecordInterface {
     /**
      * 
      */
-    protected function hasAttribute($name) {
-        return isset($this->_attributes[$name]) || in_array($name, $this->attributes(), true);
-    }
-    /**
-     * 
-     */
     protected function getValidatorsMap() {
         return array_merge(parent::getValidatorsMap(), [
             'exists' => 'me\validators\exists',
@@ -282,12 +293,6 @@ class Record extends Model implements RecordInterface {
      * 
      */
     protected function attributes() {
-        return array_keys(static::getTableSchema()->columns);
-    }
-    /**
-     * 
-     */
-    protected function fields() {
         return array_keys($this->_attributes);
     }
     //
@@ -342,6 +347,12 @@ class Record extends Model implements RecordInterface {
      */
     protected static function primaryKeys() {
         return static::getTableSchema()->primaryKey;
+    }
+    /**
+     * 
+     */
+    protected static function columns() {
+        return static::getTableSchema()->columns;
     }
     /**
      * @param array|string $condition Condition

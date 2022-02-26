@@ -26,8 +26,9 @@ class exists extends Validator {
     /**
      * @param \me\Record $model Model
      * @param string $attribute Attribute Name
+     * @param string $modelKey
      */
-    public function validateAttribute($model, $attribute) {
+    public function validateAttribute($model, $attribute, $modelKey) {
         if ($this->targetClass === null) {
             throw new Exception('The "targetClass" property must be set.');
         }

@@ -62,7 +62,7 @@ class Application extends Component {
     /**
      * @return void
      */
-    public function init() {
+    protected function init() {
         parent::init();
         Me::$app = $this;
     }
