@@ -1,38 +1,36 @@
 <?php
+
 defined('ME_DEBUG') || define('ME_DEBUG', false);
 define('ME_PATH', __DIR__ . '/src');
 define('ROOT_PATH', dirname(filter_input(INPUT_SERVER, 'SCRIPT_FILENAME')));
 define('WEB', dirname(filter_input(INPUT_SERVER, 'PHP_SELF')));
+
 class Me {
     /**
-     * @var \me\components\Application
+     * @var \me\components\application
      */
     public static $app;
     /**
      * @var array
      */
-    public static $classMap   = [];
+    public static $class_map   = [];
     /**
      * @var array
      */
-    public static $loadedFile = [];
-    /**
-     * @var me\components\Container
-     */
-    public static $container;
+    public static $loaded_file = [];
     /**
      * 
      */
-    public static function autoload($className) {
+    public static function autoload($class_name) {
         $file = '';
-        if (isset(static::$classMap[$className])) {
-            $file = static::$classMap[$className];
+        if (isset(static::$class_map[$class_name])) {
+            $file = static::$class_map[$class_name];
             if (strpos($file, '@') === 0) {
-                $file = static::getAlias($file);
+                $file = static::get_alias($file);
             }
         }
-        elseif (strpos($className, 'app') !== false) {
-            $file = static::getAlias('@' . str_replace(['\\'], ['/'], $className) . '.php');
+        elseif (strpos($class_name, 'app') !== false) {
+            $file = static::get_alias('@' . str_replace(['\\'], ['/'], $class_name) . '.php');
             if (is_null($file) || !is_file($file)) {
                 return;
             }
@@ -40,14 +38,8 @@ class Me {
         else {
             return;
         }
-        static::$loadedFile[] = $file;
+        static::$loaded_file[] = $file;
         include $file;
-    }
-    /**
-     * 
-     */
-    public static function createObject($id) {
-        return me\core\components\Container::build($id);
     }
     /**
      * @var array
@@ -60,7 +52,7 @@ class Me {
     /**
      * 
      */
-    public static function getAlias($alias) {
+    public static function get_alias($alias) {
         if (substr($alias, 0, 1) !== '@') {
             return $alias;
         }
@@ -71,54 +63,15 @@ class Me {
             $path = substr($alias, $pos);
         }
         if (isset(static::$aliases[$root])) {
-            return static::getAlias(static::$aliases[$root] . $path);
+            return static::get_alias(static::$aliases[$root] . $path);
         }
         return null;
     }
     /**
      * 
      */
-    public static function setAlias($alias, $path) {
+    public static function set_alias($alias, $path) {
         static::$aliases[$alias] = $path;
-    }
-    /**
-     * 
-     */
-    private static $translations = [];
-    public static function t($category, $message, $params = []) {
-        $app = static::$app;
-        if (!isset($app->translations[$category])) {
-            return static::formatText($message, $params);
-        }
-        if (!isset(static::$translations[$category])) {
-            $path = static::$app->translations[$category];
-            $lang = static::$app->language;
-            $file = "$path/$lang/$category.php";
-            if (!is_file($file)) {
-                return static::formatText($message, $params);
-            }
-            static::$translations[$category] = include $file;
-        }
-        $messages = static::$translations[$category];
-        if (!isset($messages[$message])) {
-            return static::formatText($message, $params);
-        }
-        return static::formatText($messages[$message], $params);
-    }
-    private static function formatText(string $text = null, $params = []) {
-        if ($text === null) {
-            return null;
-        }
-        if (empty($params)) {
-            return $text;
-        }
-        $search  = [];
-        $replace = array_values($params);
-        foreach ($params as $key => $value) {
-            $search[] = '{' . $key . '}';
-        }
-        $text = str_replace($search, $replace, $text);
-        return $text;
     }
 }
 

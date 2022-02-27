@@ -51,7 +51,7 @@ class Record extends Model implements RecordInterface {
     }
     /**
      * @param array $row
-     * @param database\Query $query
+     * @param \me\database\Query $query
      */
     public function populate($row, $query) {
         $columns = $this->columns();
