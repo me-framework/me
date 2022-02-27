@@ -8,7 +8,7 @@ use me\core\Component;
  * @property-read string $scriptUrl Script Url
  * @property-read string $baseUrl Base Url
  */
-class Request extends Component {
+class request extends Component {
     /**
      * @var string Path Info
      */

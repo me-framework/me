@@ -1,40 +1,40 @@
 <?php
 namespace me\components;
-use Me;
 use Exception;
 use me\core\Component;
+use me\core\components\Container;
 /**
  * 
  */
-class Module extends Component {
+class module extends Component {
     /**
      * @var string Module ID
      */
     public $id;
     /**
-     * @var \me\components\Module|null Parent Object or null (root module)
+     * @var \me\components\module|null Parent Object or null (root module)
      */
     public $parent;
     /**
      * @var string Controller Namespace
      */
-    public $controllerNamespace;
+    public $controller_namespace;
     /**
      * @var string Module Namespace
      */
-    public $moduleNamespace;
+    public $module_namespace;
     /**
      * @var string Default Route
      */
-    public $defaultRoute = 'default/index';
+    public $default_route = 'default/index';
     /**
      * @param string $route Route
-     * @return array [\me\components\Controller $controller, string $action_id]
+     * @return array [\me\components\controller $controller, string $action_id]
      */
     public function create_controller($route) {
 
         if ($route === '') {
-            $route = $this->defaultRoute;
+            $route = $this->default_route;
         }
 
         if (strpos($route, '/') !== false) {
@@ -51,27 +51,27 @@ class Module extends Component {
         }
 
         $name      = str_replace('-', '_', strtolower($id)) . '_controller';
-        $className = "$this->controllerNamespace\\$name";
-        if (!class_exists($className) || !is_subclass_of($className, Controller::class)) {
+        $className = "$this->controller_namespace\\$name";
+        if (!class_exists($className) || !is_subclass_of($className, controller::class)) {
             throw new Exception("Controller { $className } Not Found", 12001);
         }
 
-        $controller = Me::createObject(['class' => $className, 'id' => $id, 'parent' => $this]);
+        $controller = Container::build(['class' => $className, 'id' => $id, 'parent' => $this]);
         return [$controller, $route2];
     }
     /**
      * @param string $id Module ID
-     * @return \me\components\Module|null Module Object or null
+     * @return \me\components\module|null Module Object or null
      */
     public function get_module($id) {
 
         $name      = str_replace('-', '_', strtolower($id));
-        $className = $this->moduleNamespace . "\\$name\\module";
+        $className = $this->module_namespace . "\\$name\\module";
 
-        if (!class_exists($className) || !is_subclass_of($className, Module::class)) {
+        if (!class_exists($className) || !is_subclass_of($className, module::class)) {
             return null;
         }
 
-        return Me::createObject(['class' => $className, 'id' => $id, 'parent' => $this]);
+        return Container::build(['class' => $className, 'id' => $id, 'parent' => $this]);
     }
 }

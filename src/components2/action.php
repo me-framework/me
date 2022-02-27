@@ -6,13 +6,13 @@ use me\core\Component;
 /**
  * 
  */
-class Action extends Component {
+class action extends Component {
     /**
      * @var string Action ID
      */
     public $id;
     /**
-     * @var \me\components\Controller Controller Object
+     * @var \me\components\controller Controller Object
      */
     public $parent;
     /**
@@ -21,7 +21,7 @@ class Action extends Component {
     public $actionMethod;
     /**
      * @param array $params Parameters
-     * @return \me\components\Response|mixed Response
+     * @return \me\components\response|mixed Response
      */
     public function run($params) {
         $method = new ReflectionMethod($this->parent, $this->actionMethod);
