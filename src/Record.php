@@ -50,9 +50,10 @@ class Record extends Model implements RecordInterface {
         return true;
     }
     /**
-     * 
+     * @param array $row
+     * @param database\Query $query
      */
-    public function populate($row) {
+    public function populate($row, $query) {
         $columns = $this->columns();
         foreach ($row as $name => $value) {
             if (isset($columns[$name])) {
@@ -63,7 +64,7 @@ class Record extends Model implements RecordInterface {
             //}
         }
         $this->_oldAttributes = $this->_attributes;
-        return $this;
+        return $this->populateWith($query->with);
     }
     /**
      * 
@@ -199,11 +200,11 @@ class Record extends Model implements RecordInterface {
         foreach ($many as $attribute => $validator) {
             /* @var $validator validators\many */
             /* @var $models Record[] */
-            $source_id_name  = $validator->sourceAttribute;
+            $source_id_name  = $validator->source_attribute;
             $source_id       = $this->$source_id_name;
-            $dest_field_name = $validator->destAttribute;
-            $dest_id_name    = $validator->destKey;
-            $class_name      = $validator->targetClass;
+            $dest_field_name = $validator->dest_attribute;
+            $dest_id_name    = $validator->dest_key;
+            $class_name      = $validator->target_class;
             $ids             = [];
             $models          = $this->$attribute;
             foreach ($models as $model) {
@@ -281,6 +282,12 @@ class Record extends Model implements RecordInterface {
     /**
      * 
      */
+    protected function attributes() {
+        return array_keys($this->_attributes);
+    }
+    /**
+     * 
+     */
     protected function getValidatorsMap() {
         return array_merge(parent::getValidatorsMap(), [
             'exists' => 'me\validators\exists',
@@ -292,8 +299,62 @@ class Record extends Model implements RecordInterface {
     /**
      * 
      */
-    protected function attributes() {
-        return array_keys($this->_attributes);
+    protected function hasRelation($attributes_rules, $attribute) {
+        if (!isset($attributes_rules[$attribute])) {
+            return false;
+        }
+        $rules = $attributes_rules[$attribute];
+        if (is_string($rules)) {
+            $rules = explode('|', $rules);
+        }
+        if (!is_array($rules)) {
+            return false;
+        }
+        foreach ($rules as $rule) {
+            if (strpos($rule, 'many') !== false || strpos($rule, 'sync') !== false) {
+                return $rule;
+            }
+        }
+        return false;
+    }
+    /**
+     * 
+     */
+    protected function populateWith($with) {
+        if (!$with) {
+            return $this;
+        }
+        $attributes_rules = $this->rules();
+        $validatorsMap    = $this->getValidatorsMap();
+        foreach ($with as $name) {
+            $rule = $this->hasRelation($attributes_rules, $name);
+
+            if (!$rule) {
+                throw new Exception('No Relation Found: "' . $name . '"');
+            }
+
+            $validator = $this->createRule($validatorsMap, $rule);
+            if ($validator instanceof validators\sync) {
+                $relation_class     = $validator->relation_class;
+                $source_id          = $validator->source_id;
+                $relation_source_id = $validator->relation_source_id;
+                $relation_target_id = $validator->relation_target_id;
+
+                $items  = [];
+                $models = $relation_class::find()->select([$relation_target_id])->where([$relation_source_id => $this->$source_id])->all();
+                foreach ($models as $model) {
+                    $items[] = $model->$relation_target_id;
+                }
+                $this->$name = $items;
+            }
+            elseif ($validator instanceof validators\many) {
+                $target_class     = $validator->target_class;
+                $source_attribute = $validator->source_attribute;
+                $dest_attribute   = $validator->dest_attribute;
+                $models           = $target_class::findAll([$dest_attribute => $this->$source_attribute]);
+                $this->$name      = $models;
+            }
+        }
     }
     //
     //

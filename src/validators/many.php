@@ -8,35 +8,35 @@ class many extends Validator {
     /**
      * @var string the name of the Record class
      */
-    public $targetClass;
+    public $target_class;
     /**
      * @var string the name of the source attribute
      */
-    public $sourceAttribute;
+    public $source_attribute;
     /**
      * @var string the name of the destination attribute
      */
-    public $destAttribute;
+    public $dest_attribute;
     /**
      * @var string the name of the destination Primary Key
      */
-    public $destKey;
+    public $dest_key;
     /**
      * @param string $options Options
      */
     public function setOptions($options) {
         $config = explode(',', $options);
         if (isset($config[0]) && !empty($config[0])) {
-            $this->targetClass = $config[0];
+            $this->target_class = $config[0];
         }
         if (isset($config[1]) && !empty($config[1])) {
-            $this->sourceAttribute = $config[1];
+            $this->source_attribute = $config[1];
         }
         if (isset($config[2]) && !empty($config[2])) {
-            $this->destAttribute = $config[2];
+            $this->dest_attribute = $config[2];
         }
         if (isset($config[3]) && !empty($config[3])) {
-            $this->destKey = $config[3];
+            $this->dest_key = $config[3];
         }
     }
     /**
@@ -45,16 +45,16 @@ class many extends Validator {
      * @param string $modelKey
      */
     public function validateAttribute($model, $attribute, $modelKey) {
-        if ($this->targetClass === null) {
-            throw new Exception('The "targetClass" property must be set.');
+        if ($this->target_class === null) {
+            throw new Exception('The "target_class" property must be set.');
         }
-        if ($this->destKey === null) {
+        if ($this->dest_key === null) {
             //find dest key
         }
-        if ($this->destAttribute === null) {
+        if ($this->dest_attribute === null) {
             //find dest attribute
         }
-        if ($this->sourceAttribute === null) {
+        if ($this->source_attribute === null) {
             //find source attribute
         }
 
@@ -68,11 +68,11 @@ class many extends Validator {
         }
 
         /* @var $class_name \me\Record */
-        $source_id_name  = $this->sourceAttribute;
+        $source_id_name  = $this->source_attribute;
         $source_id       = $model->$source_id_name;
-        $dest_field_name = $this->destAttribute;
-        $dest_id_name    = $this->destKey;
-        $class_name      = $this->targetClass;
+        $dest_field_name = $this->dest_attribute;
+        $dest_id_name    = $this->dest_key;
+        $class_name      = $this->target_class;
 
         $classes = [];
         foreach ($rows as $index => $row) {

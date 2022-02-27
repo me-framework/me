@@ -6,10 +6,6 @@ class sync extends Validator {
     /**
      * 
      */
-    public $target_class;
-    /**
-     * 
-     */
     public $relation_class;
     /**
      * 
@@ -22,10 +18,6 @@ class sync extends Validator {
     /**
      * 
      */
-    public $target_id;
-    /**
-     * 
-     */
     public $relation_target_id;
     /**
      * @param string $options Options
@@ -33,22 +25,16 @@ class sync extends Validator {
     public function setOptions($options) {
         $config = explode(',', $options);
         if (isset($config[0]) && !empty($config[0])) {
-            $this->target_class = $config[0];
+            $this->relation_class = $config[0];
         }
         if (isset($config[1]) && !empty($config[1])) {
-            $this->relation_class = $config[1];
+            $this->source_id = $config[1];
         }
         if (isset($config[2]) && !empty($config[2])) {
-            $this->source_id = $config[2];
+            $this->relation_source_id = $config[2];
         }
         if (isset($config[3]) && !empty($config[3])) {
-            $this->relation_source_id = $config[3];
-        }
-        if (isset($config[4]) && !empty($config[4])) {
-            $this->target_id = $config[4];
-        }
-        if (isset($config[5]) && !empty($config[5])) {
-            $this->relation_target_id = $config[5];
+            $this->relation_target_id = $config[3];
         }
     }
     /**
