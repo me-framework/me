@@ -323,7 +323,7 @@ class Record extends Model implements RecordInterface {
             if (!$rule) {
                 throw new Exception('No Relation Found: "' . $name . '"');
             }
-            $validator = $this->createRule($validatorsMap, $rule);
+            $validator = $this->getValidator($validatorsMap, $rule);
             if ($validator instanceof validators\sync) {
                 $relation_class     = $validator->relation_class;
                 $source_id          = $validator->source_id;
@@ -346,6 +346,12 @@ class Record extends Model implements RecordInterface {
             }
         }
         return $this;
+    }
+    protected function getValidator($validatorsMap, $rule) {
+        $arConfig = explode(':', $rule, 2);
+        $name     = strtolower($arConfig[0]);
+        $options  = $arConfig[1] ?? '';
+        return core\components\Container::build(['class' => $validatorsMap[$name], 'options' => $options]);
     }
     //
     /**
