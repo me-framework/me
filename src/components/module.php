@@ -2,7 +2,7 @@
 namespace me\components;
 use Exception;
 use me\core\Component;
-use me\core\components\Container;
+use me\core\Container;
 /**
  * 
  */

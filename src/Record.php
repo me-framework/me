@@ -4,9 +4,10 @@ use Me;
 use Exception;
 use me\core\Cache;
 use me\model\Model;
-use me\validators;
-use me\core\helpers\ArrayHelper;
+use me\core\Container;
+use me\helpers\ArrayHelper;
 use me\database\RecordInterface;
+use me\validators;
 class Record extends Model implements RecordInterface {
     /**
      * @var string Connection Name
@@ -22,6 +23,29 @@ class Record extends Model implements RecordInterface {
      */
     protected $_oldAttributes;
     //
+    /**
+     * 
+     */
+    public function __get($name) {
+        if (array_key_exists($name, $this->_attributes)) {
+            return $this->_attributes[$name];
+        }
+        if (array_key_exists($name, $this->columns()) || array_key_exists($name, $this->rules())) {
+            return null;
+        }
+        return parent::__get($name);
+    }
+    /**
+     * 
+     */
+    public function __set($name, $value) {
+        if (array_key_exists($name, $this->columns()) || array_key_exists($name, $this->rules())) {
+            $this->_attributes[$name] = $value;
+        }
+        else {
+            parent::__set($name, $value);
+        }
+    }
     /**
      * @param bool $runValidation Run Validation
      * @return bool
@@ -63,29 +87,6 @@ class Record extends Model implements RecordInterface {
         }
         $this->_oldAttributes = $this->_attributes;
         return $this->populateWith($query->with);
-    }
-    /**
-     * 
-     */
-    public function __get($name) {
-        if (array_key_exists($name, $this->_attributes)) {
-            return $this->_attributes[$name];
-        }
-        if (array_key_exists($name, $this->columns()) || array_key_exists($name, $this->rules())) {
-            return null;
-        }
-        return parent::__get($name);
-    }
-    /**
-     * 
-     */
-    public function __set($name, $value) {
-        if (array_key_exists($name, $this->columns()) || array_key_exists($name, $this->rules())) {
-            $this->_attributes[$name] = $value;
-        }
-        else {
-            parent::__set($name, $value);
-        }
     }
     //
     /**
@@ -351,7 +352,7 @@ class Record extends Model implements RecordInterface {
         $arConfig = explode(':', $rule, 2);
         $name     = strtolower($arConfig[0]);
         $options  = $arConfig[1] ?? '';
-        return core\components\Container::build(['class' => $validatorsMap[$name], 'options' => $options]);
+        return Container::build(['class' => $validatorsMap[$name], 'options' => $options]);
     }
     //
     /**

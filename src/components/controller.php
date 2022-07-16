@@ -4,7 +4,7 @@ use Me;
 use Exception;
 use ReflectionMethod;
 use me\core\Component;
-use me\core\components\Container;
+use me\core\Container;
 /**
  * 
  */

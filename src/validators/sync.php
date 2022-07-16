@@ -1,7 +1,7 @@
 <?php
 namespace me\validators;
-use me\model\Validator;
 use me\core\Cache;
+use me\model\Validator;
 class sync extends Validator {
     /**
      * 

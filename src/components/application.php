@@ -2,10 +2,10 @@
 namespace me\components;
 use Me;
 use Exception;
-use me\core\Component;
 use me\url\UrlManager;
+use me\core\Component;
+use me\core\Container;
 use me\database\DatabaseManager;
-use me\core\components\Container;
 /**
  * @property-read \me\url\UrlManager $urlManager Url Manager
  * @property-read \me\components\request $request Request
