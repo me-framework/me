@@ -2,7 +2,7 @@
 namespace me\validators;
 use Exception;
 use me\model\Validator;
-class exists extends Validator {
+class ExistsValidator extends Validator {
     /**
      * @var string the name of the Record class
      */

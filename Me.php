@@ -7,7 +7,7 @@ define('WEB', dirname(filter_input(INPUT_SERVER, 'PHP_SELF')));
 
 class Me {
     /**
-     * @var \me\components\application
+     * @var \me\components\Application
      */
     public static $app;
     /**
@@ -22,7 +22,7 @@ class Me {
      * 
      */
     public static function autoload($class_name) {
-        $file = '';
+        $file = null;
         if (isset(static::$class_map[$class_name])) {
             $file = static::$class_map[$class_name];
             if (strpos($file, '@') === 0) {
@@ -31,11 +31,8 @@ class Me {
         }
         elseif (strpos($class_name, 'app') !== false) {
             $file = static::get_alias('@' . str_replace(['\\'], ['/'], $class_name) . '.php');
-            if (is_null($file) || !is_file($file)) {
-                return;
-            }
         }
-        else {
+        if (is_null($file) || !is_file($file)) {
             return;
         }
         static::$loaded_file[] = $file;

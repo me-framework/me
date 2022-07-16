@@ -4,7 +4,7 @@ use Exception;
 use me\Record;
 use me\core\Cache;
 use me\model\Validator;
-class many extends Validator {
+class ManyValidator extends Validator {
     /**
      * @var string the name of the Record class
      */
@@ -38,13 +38,6 @@ class many extends Validator {
         if (isset($config[3]) && !empty($config[3])) {
             $this->dest_key = $config[3];
         }
-    }
-    /**
-     * @param \me\Record $model Model
-     * @param string $attribute Attribute Name
-     * @param string $modelKey
-     */
-    public function validateAttribute($model, $attribute, $modelKey) {
         if ($this->target_class === null) {
             throw new Exception('The "target_class" property must be set.');
         }
@@ -57,50 +50,53 @@ class many extends Validator {
         if ($this->source_attribute === null) {
             //find source attribute
         }
-
+    }
+    /**
+     * @param \me\Record $model Model
+     * @param string $attribute Attribute Name
+     * @param string $modelKey
+     */
+    public function validateAttribute($model, $attribute, $modelKey) {
         $rows = $model->$attribute;
         if ($rows === null) {
             return;
         }
         if (!is_array($rows)) {
-            $model->addError($attribute, 'many');
-            return;
+            return $model->addError($attribute, 'many');
         }
-
-        /* @var $class_name \me\Record */
-        $source_id_name  = $this->source_attribute;
-        $source_id       = $model->$source_id_name;
-        $dest_field_name = $this->dest_attribute;
-        $dest_id_name    = $this->dest_key;
-        $class_name      = $this->target_class;
-
         $classes = [];
         foreach ($rows as $index => $row) {
-            /* @var $class \me\Record */
-            $class = null;
-            if ($row instanceof Record) {
-                $class = $row;
-            }
-            else {
-                unset($row[$dest_field_name]);
-                if ($source_id && isset($row[$dest_id_name])) {
-                    $class = $class_name::findOne([
-                                $dest_id_name    => $row[$dest_id_name],
-                                $dest_field_name => $source_id
-                    ]);
-                }
-                unset($row[$dest_id_name]);
-                if ($class === null) {
-                    $class = new $class_name();
-                }
-                $class->load($row);
-            }
-            if (!$class->validate(true, null, [$dest_field_name])) {
+            $class = $this->findClass($model, $row);
+            if (!$class->validate(true, null, [$this->dest_attribute])) {
                 $model->addErrors($attribute . '.' . $index, $class->getErrors());
             }
             $classes[] = $class;
         }
         $model->$attribute = $classes;
         Cache::setCache([$modelKey, 'many', $attribute], $this);
+    }
+    /**
+     * @return \me\Record Record
+     */
+    private function findClass($model, $row) {
+        /* @var $class_name \me\Record */
+        $class_name      = $this->target_class; // users_mobiles
+        $source_id_name  = $this->source_attribute; // id
+        $source_id       = $model->$source_id_name; // 1
+        $dest_field_name = $this->dest_attribute; // user_id
+        $dest_id_name    = $this->dest_key; // id
+        
+        /* @var $class \me\Record */
+        $class = new $class_name();
+        if ($row instanceof Record) {
+            $class = $row;
+        }
+        else {
+            if ($source_id && isset($row[$dest_id_name])) {
+                $class = $class_name::findOne([$dest_id_name => $row[$dest_id_name], $dest_field_name => $source_id]);
+            }
+            $class->load($row);
+        }
+        return $class;
     }
 }

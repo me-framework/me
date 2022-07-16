@@ -283,10 +283,10 @@ class Record extends Model implements RecordInterface {
      */
     protected function getValidatorsMap() {
         return array_merge(parent::getValidatorsMap(), [
-            'exists' => validators\exists::class,
-            'many'   => validators\many::class,
-            'sync'   => validators\sync::class,
-            'unique' => validators\unique::class,
+            'exists' => validators\ExistsValidator::class,
+            'many'   => validators\ManyValidator::class,
+            'sync'   => validators\SyncValidator::class,
+            'unique' => validators\UniqueValidator::class,
         ]);
     }
     /**
@@ -325,7 +325,7 @@ class Record extends Model implements RecordInterface {
                 throw new Exception('No Relation Found: "' . $name . '"');
             }
             $validator = $this->getValidator($validatorsMap, $rule);
-            if ($validator instanceof validators\sync) {
+            if ($validator instanceof validators\SyncValidator) {
                 $relation_class     = $validator->relation_class;
                 $source_id          = $validator->source_id;
                 $relation_source_id = $validator->relation_source_id;
@@ -338,7 +338,7 @@ class Record extends Model implements RecordInterface {
                 }
                 $this->$name = $items;
             }
-            elseif ($validator instanceof validators\many) {
+            elseif ($validator instanceof validators\ManyValidator) {
                 $target_class     = $validator->target_class;
                 $source_attribute = $validator->source_attribute;
                 $dest_attribute   = $validator->dest_attribute;
@@ -348,6 +348,9 @@ class Record extends Model implements RecordInterface {
         }
         return $this;
     }
+    /**
+     * @return \me\model\Validator
+     */
     protected function getValidator($validatorsMap, $rule) {
         $arConfig = explode(':', $rule, 2);
         $name     = strtolower($arConfig[0]);
