@@ -2,7 +2,7 @@
 namespace me\components;
 use me\core\Component;
 use me\helpers\JsonHelper;
-class response extends Component {
+class Response extends Component {
     public $code    = 200;
     public $data    = [];
     public $headers = [

@@ -24,7 +24,7 @@ class Controller extends Component {
     /**
      * @param string $action_id Action ID
      * @param array $params Parameters
-     * @return \me\components\response|mixed Response
+     * @return \me\components\Response|mixed Response
      */
     public function run_action(string $action_id, array $params = []) {
         $action = $this->create_action($action_id);

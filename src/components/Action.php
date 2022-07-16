@@ -21,7 +21,7 @@ class Action extends Component {
     public $parent;
     /**
      * @param array $params Parameters
-     * @return \me\components\response|mixed Response
+     * @return \me\components\Response|mixed Response
      */
     public function run($params) {
         $method = new ReflectionMethod($this->parent, $this->actionMethod);

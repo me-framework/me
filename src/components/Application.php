@@ -22,10 +22,6 @@ class Application extends Component {
      */
     public $language            = 'fa-IR';
     /**
-     * @var string Time Zone
-     */
-    public $timezone            = 'Asia/Tehran';
-    /**
      * @var string Module Namespace
      */
     public $module_namespace    = 'app\modules';
@@ -33,6 +29,10 @@ class Application extends Component {
      * @var string Default Route
      */
     public $default_route       = 'site/default/index';
+    /**
+     * @var string Time Zone
+     */
+    protected $_timezone        = 'Asia/Tehran';
     /**
      * @var array Components Definitions
      */
@@ -47,7 +47,7 @@ class Application extends Component {
     protected $_core_components = [
         'url'      => ['class' => UrlManager::class],
         'request'  => ['class' => Request::class],
-        'response' => ['class' => response::class],
+        'response' => ['class' => Response::class],
         'database' => ['class' => DatabaseManager::class],
     ];
     /**
@@ -141,9 +141,13 @@ class Application extends Component {
         }
     }
     /**
-     * @param string $base_path Base Path
+     * @param string $timezone timezone
      * @return void
      */
+    public function setTimezone($timezone) {
+        $this->_timezone = $timezone;
+        date_default_timezone_set($timezone);
+    }
     public function setBase_path($base_path) {
         Me::set_alias('@app', $base_path);
     }
