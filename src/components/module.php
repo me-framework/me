@@ -12,9 +12,9 @@ class module extends Component {
      */
     public $id;
     /**
-     * @var \me\components\module|null Parent Object or null (root module)
+     * @var string Default Route
      */
-    public $parent;
+    public $default_route = 'default/index';
     /**
      * @var string Controller Namespace
      */
@@ -24,54 +24,48 @@ class module extends Component {
      */
     public $module_namespace;
     /**
-     * @var string Default Route
+     * @var \me\components\module|null Parent Object or null (root module)
      */
-    public $default_route = 'default/index';
+    public $parent;
     /**
-     * @param string $route Route
+     * @param string $controller_id Route
      * @return array [\me\components\controller $controller, string $action_id]
      */
-    public function create_controller($route) {
-
-        if ($route === '') {
-            $route = $this->default_route;
+    public function create_controller($controller_id) {
+        if ($controller_id === '') {
+            $controller_id = $this->default_route;
         }
 
-        if (strpos($route, '/') !== false) {
-            list($id, $route2) = explode('/', $route, 2);
-        }
-        else {
-            $id     = $route;
-            $route2 = '';
+        $id     = $controller_id;
+        $route = '';
+        if (strpos($controller_id, '/') !== false) {
+            [$id, $route] = explode('/', $controller_id, 2);
         }
 
         $module = $this->get_module($id);
-        if (!is_null($module)) {
-            return $module->create_controller($route2);
+        if ($module !== null) {
+            return $module->create_controller($route);
         }
 
-        $name      = str_replace('-', '_', strtolower($id)) . '_controller';
-        $className = "$this->controller_namespace\\$name";
-        if (!class_exists($className) || !is_subclass_of($className, controller::class)) {
+        $name      = str_replace('-', '_', strtolower($id));
+        $className = $this->controller_namespace . "\\{$name}_controller";
+        if (!class_exists($className)) { //  || !($className instanceof controller)
             throw new Exception("Controller { $className } Not Found", 12001);
         }
 
         $controller = Container::build(['class' => $className, 'id' => $id, 'parent' => $this]);
-        return [$controller, $route2];
+        return [$controller, $route];
     }
     /**
      * @param string $id Module ID
      * @return \me\components\module|null Module Object or null
      */
     public function get_module($id) {
-
         $name      = str_replace('-', '_', strtolower($id));
         $className = $this->module_namespace . "\\$name\\module";
-
-        if (!class_exists($className) || !is_subclass_of($className, module::class)) {
+        if (!class_exists($className) || !($className instanceof module)) {
             return null;
         }
-
         return Container::build(['class' => $className, 'id' => $id, 'parent' => $this]);
     }
 }

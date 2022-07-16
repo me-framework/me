@@ -12,13 +12,13 @@ class action extends Component {
      */
     public $id;
     /**
-     * @var \me\components\controller Controller Object
-     */
-    public $parent;
-    /**
      * @var string Action Method
      */
     public $actionMethod;
+    /**
+     * @var \me\components\controller Controller Object
+     */
+    public $parent;
     /**
      * @param array $params Parameters
      * @return \me\components\response|mixed Response

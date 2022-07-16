@@ -25,15 +25,13 @@ class request extends Component {
      * @return array [string $route, array $params]
      */
     public function resolve() {
-        /* @var $url \me\url\UrlManager */
-        $url      = Me::$app->get('url');
         $pathInfo = $this->getPathInfo();
         $method   = $this->getMethod();
-        $result   = $url->parseRequest($pathInfo, $method);
+        $result   = Me::$app->getUrlManager()->parseRequest($pathInfo, $method);
         if ($result === false) {
             throw new Exception('Page Not Found');
         }
-        list($route, $params) = $result;
+        [$route, $params] = $result;
         $_GET = $params + $_GET;
         return [$route, $this->get()];
     }
@@ -114,7 +112,7 @@ class request extends Component {
             return $_GET;
         }
         $value = filter_input(INPUT_GET, $name);
-        if (is_null($value)) {
+        if ($value === null) {
             return $defaultValue;
         }
         return $value;
@@ -124,7 +122,7 @@ class request extends Component {
             return $_POST;
         }
         $value = filter_input(INPUT_POST, $name);
-        if (is_null($value)) {
+        if ($value === null) {
             return $defaultValue;
         }
         return $value;
@@ -137,5 +135,8 @@ class request extends Component {
             return $_FILES[$name];
         }
         return $defaultValue;
+    }
+    public function getUserIP() {
+        return filter_input(INPUT_SERVER, 'REMOTE_ADDR');
     }
 }

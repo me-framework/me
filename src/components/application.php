@@ -7,41 +7,44 @@ use me\url\UrlManager;
 use me\database\DatabaseManager;
 use me\core\components\Container;
 /**
- * 
+ * @property-read \me\url\UrlManager $urlManager Url Manager
+ * @property-read \me\components\request $request Request
+ * @property-read \me\components\response $response Response
+ * @property-read \me\database\DatabaseManager $database Database Manager
  */
 class application extends Component {
     /**
      * @var string Charset
      */
-    public $charset           = 'UTF-8';
+    public $charset             = 'UTF-8';
     /**
      * @var string Language
      */
-    public $language          = 'fa-IR';
+    public $language            = 'fa-IR';
     /**
      * @var string Time Zone
      */
-    public $timezone          = 'Asia/Tehran';
+    public $timezone            = 'Asia/Tehran';
     /**
      * @var string Module Namespace
      */
-    public $module_namespace  = 'app\modules';
+    public $module_namespace    = 'app\modules';
     /**
      * @var string Default Route
      */
-    public $default_route     = 'site/default/index';
+    public $default_route       = 'site/default/index';
     /**
      * @var array Components Definitions
      */
-    private $_definitions     = [];
+    protected $_definitions     = [];
     /**
      * @var array Components Objects
      */
-    private $_components      = [];
+    protected $_components      = [];
     /**
      * @var array Core Components
      */
-    private $_core_components = [
+    protected $_core_components = [
         'url'      => ['class' => UrlManager::class],
         'request'  => ['class' => request::class],
         'response' => ['class' => response::class],
@@ -66,17 +69,31 @@ class application extends Component {
         Me::$app = $this;
     }
     /**
+     * @return void
+     */
+    public function run() {
+        set_exception_handler(function ($exc) {
+            $code    = $exc->getCode();
+            $file    = $exc->getFile();
+            $line    = $exc->getLine();
+            $message = $exc->getMessage();
+            $this->handle_error($code, $file, $line, $message);
+        });
+        set_error_handler(function ($code, $message, $file, $line) {
+            $this->handle_error($code, $file, $line, $message);
+        });
+        $this->handle_request();
+    }
+    /**
      * 
      */
     public function get($id) {
         if (isset($this->_components[$id])) {
             return $this->_components[$id];
         }
-
         if (isset($this->_definitions[$id])) {
             return $this->_components[$id] = Container::build($this->_definitions[$id]);
         }
-
         throw new Exception("Component { $id } Not Found", 11001);
     }
     /**
@@ -89,6 +106,30 @@ class application extends Component {
             return;
         }
         $this->_definitions[$id] = $definition;
+    }
+    /**
+     * @return \me\url\UrlManager Url Manager
+     */
+    public function getUrlManager() {
+        return $this->get('url');
+    }
+    /**
+     * @return \me\components\request Request
+     */
+    public function getRequest() {
+        return $this->get('request');
+    }
+    /**
+     * @return \me\components\response Response
+     */
+    public function getResponse() {
+        return $this->get('response');
+    }
+    /**
+     * @return \me\database\DatabaseManager Database Manager
+     */
+    public function getDatabase() {
+        return $this->get('database');
     }
     /**
      * @param array $components Components Definitions
@@ -109,46 +150,29 @@ class application extends Component {
     /**
      * @return void
      */
-    public function run() {
-        set_exception_handler(function ($exc) {
-            $code    = $exc->getCode();
-            $file    = $exc->getFile();
-            $line    = $exc->getLine();
-            $message = $exc->getMessage();
-            $this->handle_error($code, $file, $line, $message);
-        });
-        set_error_handler(function ($code, $message, $file, $line) {
-            $this->handle_error($code, $file, $line, $message);
-        });
-        $this->handle_request();
-    }
-    /**
-     * @return void
-     */
-    public function handle_error($code, $file, $line, $message) {
+    private function handle_error($code, $file, $line, $message) {
         $data = ['done' => false, 'code' => $code, 'message' => 'خطای سرور'];
         if (ME_DEBUG) {
             $data['message'] = $message;
             $data['file']    = $file;
             $data['line']    = $line;
         }
-        /* @var $response \me\components\response */
-        $response       = $this->get('response');
+        $response       = $this->getResponse();
         $response->data = $data;
         $response->send();
     }
     /**
      * @return void
      */
-    public function handle_request() {
-        list($route, $params) = $this->get('request')->resolve();
+    private function handle_request() {
+        [$route, $params] = $this->getRequest()->resolve();
 
         $data = $this->handle_action($route, $params);
         if ($data instanceof response) {
             $data->send();
         }
 
-        $response       = $this->get('response');
+        $response       = $this->getResponse();
         $response->data = ['done' => true, 'data' => $data];
         $response->send();
     }
@@ -157,41 +181,35 @@ class application extends Component {
      * @param array $params Parameters
      * @return \me\components\response|mixed
      */
-    public function handle_action($route, $params) {
-        /* @var $module \me\components\module */
+    private function handle_action($module_id, $params) {
+        /* @var $module     \me\components\module */
         /* @var $controller \me\components\controller */
-        /* @var $action_id string */
-        list($module, $route2) = $this->create_module($route);
-        list($controller, $action_id) = $module->create_controller($route2);
+        [$module, $controller_id] = $this->create_module($module_id);
+        [$controller, $action_id] = $module->create_controller($controller_id);
         return $controller->run_action($action_id, $params);
     }
     /**
-     * @param string $route Route
+     * @param string $module_id Route
      * @return array [\me\components\module $module, string $route]
      */
-    public function create_module($route) {
-
-        if ($route === '') {
-            $route = $this->default_route;
+    private function create_module($module_id) {
+        if ($module_id === '') {
+            $module_id = $this->default_route;
         }
 
-        if (strpos($route, '/') !== false) {
-            list($id, $route2) = explode('/', $route, 2);
-        }
-        else {
-            $id     = $route;
-            $route2 = '';
+        $id    = $module_id;
+        $route = '';
+        if (strpos($module_id, '/') !== false) {
+            [$id, $route] = explode('/', $module_id, 2);
         }
 
         $name      = str_replace('-', '_', strtolower($id));
         $className = $this->module_namespace . "\\$name\\module";
-
-        if (!class_exists($className) || !is_subclass_of($className, module::class)) {
+        if (!class_exists($className)) { //  || !($className instanceof module)
             throw new Exception("Module { $className } Not Found", 11002);
         }
 
-        $module = Container::build(['class' => $className, 'id' => $id, 'parent' => null]);
-
-        return [$module, $route2];
+        $module = Container::build(['class' => $className, 'id' => $id]);
+        return [$module, $route];
     }
 }

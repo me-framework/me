@@ -4,7 +4,8 @@ use Me;
 use Exception;
 use me\core\Cache;
 use me\model\Model;
-use me\helpers\ArrayHelper;
+use me\validators;
+use me\core\helpers\ArrayHelper;
 use me\database\RecordInterface;
 class Record extends Model implements RecordInterface {
     /**
@@ -20,9 +21,6 @@ class Record extends Model implements RecordInterface {
      * This is `null` if the record [[isNewRecord|is new]].
      */
     protected $_oldAttributes;
-    //
-    //
-    //
     //
     /**
      * @param bool $runValidation Run Validation
@@ -90,9 +88,6 @@ class Record extends Model implements RecordInterface {
         }
     }
     //
-    //
-    //
-    //
     /**
      * 
      */
@@ -138,9 +133,6 @@ class Record extends Model implements RecordInterface {
         [$sql, $params] = static::getQueryBuilder()->delete(static::tableName(), $condition);
         return static::getCommand()->execute($connection, $sql, $params);
     }
-    //
-    //
-    //
     //
     /**
      * @return bool
@@ -198,7 +190,7 @@ class Record extends Model implements RecordInterface {
     protected function many() {
         $many = Cache::getCache([$this->_key, 'many'], []);
         foreach ($many as $attribute => $validator) {
-            /* @var $validator validators\many */
+            /* @var $validator \me\validators\many */
             /* @var $models Record[] */
             $source_id_name  = $validator->source_attribute;
             $source_id       = $this->$source_id_name;
@@ -221,7 +213,7 @@ class Record extends Model implements RecordInterface {
     protected function sync() {
         $sync = Cache::getCache([$this->_key, 'sync'], []);
         foreach ($sync as [$validator, $models]) {
-            /* @var $validator validators\sync */
+            /* @var $validator \me\validators\sync */
             /* @var $models Record[] */
             $relation_class     = $validator->relation_class;
             $source_id_name     = $validator->source_id;
@@ -290,10 +282,10 @@ class Record extends Model implements RecordInterface {
      */
     protected function getValidatorsMap() {
         return array_merge(parent::getValidatorsMap(), [
-            'exists' => 'me\validators\exists',
-            'many'   => 'me\validators\many',
-            'sync'   => 'me\validators\sync',
-            'unique' => 'me\validators\unique',
+            'exists' => validators\exists::class,
+            'many'   => validators\many::class,
+            'sync'   => validators\sync::class,
+            'unique' => validators\unique::class,
         ]);
     }
     /**
@@ -328,11 +320,9 @@ class Record extends Model implements RecordInterface {
         $validatorsMap    = $this->getValidatorsMap();
         foreach ($with as $name) {
             $rule = $this->hasRelation($attributes_rules, $name);
-
             if (!$rule) {
                 throw new Exception('No Relation Found: "' . $name . '"');
             }
-
             $validator = $this->createRule($validatorsMap, $rule);
             if ($validator instanceof validators\sync) {
                 $relation_class     = $validator->relation_class;
@@ -355,16 +345,14 @@ class Record extends Model implements RecordInterface {
                 $this->$name      = $models;
             }
         }
+        return $this;
     }
-    //
-    //
-    //
     //
     /**
      * @return \me\database\DatabaseManager Database Manager
      */
     protected static function getDatabase() {
-        return Me::$app->get('database');
+        return Me::$app->getDatabase();
     }
     /**
      * @return \me\database\Connection Connection

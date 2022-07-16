@@ -1,7 +1,7 @@
 <?php
 namespace me\components;
 use me\core\Component;
-use me\helpers\JsonHelper;
+use me\core\helpers\JsonHelper;
 class response extends Component {
     public $code    = 200;
     public $data    = [];
