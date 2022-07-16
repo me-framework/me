@@ -177,7 +177,7 @@ class application extends Component {
         $response->send();
     }
     /**
-     * @param string $route Route
+     * @param string $module_id Route
      * @param array $params Parameters
      * @return \me\components\response|mixed
      */
