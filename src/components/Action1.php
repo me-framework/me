@@ -6,7 +6,7 @@ use me\core\Component;
 /**
  * 
  */
-class action extends Component {
+class Action extends Component {
     /**
      * @var string Action ID
      */
@@ -16,7 +16,7 @@ class action extends Component {
      */
     public $actionMethod;
     /**
-     * @var \me\components\controller Controller Object
+     * @var \me\components\Controller Controller Object
      */
     public $parent;
     /**

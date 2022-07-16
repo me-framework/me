@@ -8,11 +8,11 @@ use me\core\Container;
 use me\database\DatabaseManager;
 /**
  * @property-read \me\url\UrlManager $urlManager Url Manager
- * @property-read \me\components\request $request Request
- * @property-read \me\components\response $response Response
+ * @property-read \me\components\Request $request Request
+ * @property-read \me\components\Response $response Response
  * @property-read \me\database\DatabaseManager $database Database Manager
  */
-class application extends Component {
+class Application extends Component {
     /**
      * @var string Charset
      */
@@ -46,13 +46,13 @@ class application extends Component {
      */
     protected $_core_components = [
         'url'      => ['class' => UrlManager::class],
-        'request'  => ['class' => request::class],
+        'request'  => ['class' => Request::class],
         'response' => ['class' => response::class],
         'database' => ['class' => DatabaseManager::class],
     ];
     /**
      * @param array $config Application Config
-     * @return \me\components\application
+     * @return \me\components\Application
      */
     public function __construct($config = []) {
         if (!isset($config['components'])) {
@@ -114,13 +114,13 @@ class application extends Component {
         return $this->get('url');
     }
     /**
-     * @return \me\components\request Request
+     * @return \me\components\Request Request
      */
     public function getRequest() {
         return $this->get('request');
     }
     /**
-     * @return \me\components\response Response
+     * @return \me\components\Response Response
      */
     public function getResponse() {
         return $this->get('response');
@@ -168,7 +168,7 @@ class application extends Component {
         [$route, $params] = $this->getRequest()->resolve();
 
         $data = $this->handle_action($route, $params);
-        if ($data instanceof response) {
+        if ($data instanceof Response) {
             $data->send();
         }
 
@@ -179,18 +179,18 @@ class application extends Component {
     /**
      * @param string $module_id Route
      * @param array $params Parameters
-     * @return \me\components\response|mixed
+     * @return \me\components\Response|mixed
      */
     private function handle_action($module_id, $params) {
-        /* @var $module     \me\components\module */
-        /* @var $controller \me\components\controller */
+        /* @var $module     \me\components\Module */
+        /* @var $controller \me\components\Controller */
         [$module, $controller_id] = $this->create_module($module_id);
         [$controller, $action_id] = $module->create_controller($controller_id);
         return $controller->run_action($action_id, $params);
     }
     /**
      * @param string $module_id Route
-     * @return array [\me\components\module $module, string $route]
+     * @return array [\me\components\Module $module, string $route]
      */
     private function create_module($module_id) {
         if ($module_id === '') {
@@ -205,7 +205,7 @@ class application extends Component {
 
         $name      = str_replace('-', '_', strtolower($id));
         $className = $this->module_namespace . "\\$name\\module";
-        if (!class_exists($className)) { //  || !($className instanceof module)
+        if (!class_exists($className)) { //  || !($className instanceof Module)
             throw new Exception("Module { $className } Not Found", 11002);
         }
 

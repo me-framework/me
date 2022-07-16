@@ -8,7 +8,7 @@ use me\core\Container;
 /**
  * 
  */
-class controller extends Component {
+class Controller extends Component {
     /**
      * @var string Controller ID
      */
@@ -18,7 +18,7 @@ class controller extends Component {
      */
     public $default_action = 'index';
     /**
-     * @var \me\components\module Module Object
+     * @var \me\components\Module Module Object
      */
     public $parent;
     /**
@@ -34,7 +34,7 @@ class controller extends Component {
     }
     /**
      * @param string $action_id Action ID
-     * @return \me\components\action Action Object
+     * @return \me\components\Action Action Object
      */
     public function create_action(string $action_id) {
         if ($action_id === '') {
@@ -51,10 +51,10 @@ class controller extends Component {
             throw new Exception("Action { $name } Not Found", 13001);
         }
 
-        return Container::build(['class' => action::class, 'id' => $action_id, 'actionMethod' => $name, 'parent' => $this]);
+        return Container::build(['class' => Action::class, 'id' => $action_id, 'actionMethod' => $name, 'parent' => $this]);
     }
     /**
-     * @param \me\components\action $action Action Object
+     * @param \me\components\Action $action Action Object
      * @return bool
      */
     protected function beforeAction($action) {

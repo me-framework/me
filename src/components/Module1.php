@@ -6,7 +6,7 @@ use me\core\Container;
 /**
  * 
  */
-class module extends Component {
+class Module extends Component {
     /**
      * @var string Module ID
      */
@@ -24,12 +24,12 @@ class module extends Component {
      */
     public $module_namespace;
     /**
-     * @var \me\components\module|null Parent Object or null (root module)
+     * @var \me\components\Module|null Parent Object or null (root module)
      */
     public $parent;
     /**
      * @param string $controller_id Route
-     * @return array [\me\components\controller $controller, string $action_id]
+     * @return array [\me\components\Controller $controller, string $action_id]
      */
     public function create_controller($controller_id) {
         if ($controller_id === '') {
@@ -58,12 +58,12 @@ class module extends Component {
     }
     /**
      * @param string $id Module ID
-     * @return \me\components\module|null Module Object or null
+     * @return \me\components\Module|null Module Object or null
      */
     public function get_module($id) {
         $name      = str_replace('-', '_', strtolower($id));
         $className = $this->module_namespace . "\\$name\\module";
-        if (!class_exists($className) || !($className instanceof module)) {
+        if (!class_exists($className)) { // || !($className instanceof Module)
             return null;
         }
         return Container::build(['class' => $className, 'id' => $id, 'parent' => $this]);
