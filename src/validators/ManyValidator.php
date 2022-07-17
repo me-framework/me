@@ -38,6 +38,13 @@ class ManyValidator extends Validator {
         if (isset($config[3]) && !empty($config[3])) {
             $this->dest_key = $config[3];
         }
+    }
+    /**
+     * @param \me\Record $model Model
+     * @param string $attribute Attribute Name
+     * @param string $modelKey
+     */
+    public function validateAttribute($model, $attribute, $modelKey) {
         if ($this->target_class === null) {
             throw new Exception('The "target_class" property must be set.');
         }
@@ -50,13 +57,6 @@ class ManyValidator extends Validator {
         if ($this->source_attribute === null) {
             //find source attribute
         }
-    }
-    /**
-     * @param \me\Record $model Model
-     * @param string $attribute Attribute Name
-     * @param string $modelKey
-     */
-    public function validateAttribute($model, $attribute, $modelKey) {
         $rows = $model->$attribute;
         if ($rows === null) {
             return;

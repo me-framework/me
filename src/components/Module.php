@@ -49,7 +49,7 @@ class Module extends Component {
 
         $name      = str_replace('-', '_', strtolower($id));
         $className = $this->controller_namespace . "\\{$name}_controller";
-        if (!class_exists($className)) { //  || !($className instanceof controller)
+        if (!class_exists($className)) { //  || !($className instanceof Controller)
             throw new Exception("Controller { $className } Not Found", 12001);
         }
 
