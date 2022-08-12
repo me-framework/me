@@ -154,13 +154,14 @@ class Application extends Component {
      * @return void
      */
     private function handleError($code, $file, $line, $message) {
-        $data = ['done' => false, 'code' => $code, 'message' => 'خطای سرور'];
+        $data = ['code' => $code, 'message' => 'خطای سرور'];
         if (ME_DEBUG) {
-            $data['message'] = $message;
             $data['file']    = $file;
             $data['line']    = $line;
+            $data['message'] = $message;
         }
         $response       = $this->getResponse();
+        $response->code = 500;
         $response->data = $data;
         $response->send();
     }
@@ -176,7 +177,7 @@ class Application extends Component {
         }
 
         $response       = $this->getResponse();
-        $response->data = ['done' => true, 'data' => $data];
+        $response->data = $data;
         $response->send();
     }
     /**
