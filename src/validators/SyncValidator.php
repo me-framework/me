@@ -2,6 +2,9 @@
 namespace me\validators;
 use me\core\Cache;
 use me\model\Validator;
+/**
+ * 
+ */
 class SyncValidator extends Validator {
     /**
      * 

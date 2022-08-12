@@ -1,6 +1,9 @@
 <?php
 namespace me\validators;
 use me\model\Validator;
+/**
+ * 
+ */
 class UniqueValidator extends Validator {
     /**
      * @param string $options Options

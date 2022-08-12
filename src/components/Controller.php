@@ -1,10 +1,10 @@
 <?php
 namespace me\components;
 use Me;
-use Exception;
 use ReflectionMethod;
 use me\core\Component;
 use me\core\Container;
+use me\exceptions\Exception;
 /**
  * 
  */
@@ -16,7 +16,7 @@ class Controller extends Component {
     /**
      * @var string Default Action
      */
-    public $default_action = 'index';
+    public $defaultAction = 'index';
     /**
      * @var \me\components\Module Module Object
      */
@@ -26,8 +26,8 @@ class Controller extends Component {
      * @param array $params Parameters
      * @return \me\components\Response|mixed Response
      */
-    public function run_action(string $action_id, array $params = []) {
-        $action = $this->create_action($action_id);
+    public function runAction(string $action_id, array $params = []) {
+        $action = $this->createAction($action_id);
         $this->beforeAction($action);
         $result = $action->run($params);
         return $this->afterAction($action, $result);
@@ -36,9 +36,9 @@ class Controller extends Component {
      * @param string $action_id Action ID
      * @return \me\components\Action Action Object
      */
-    public function create_action(string $action_id) {
+    public function createAction(string $action_id) {
         if ($action_id === '') {
-            $action_id = $this->default_action;
+            $action_id = $this->defaultAction;
         }
 
         $name = str_replace('-', '_', strtolower($action_id));
@@ -51,7 +51,7 @@ class Controller extends Component {
             throw new Exception("Action { $name } Not Found", 13001);
         }
 
-        return Container::build(['class' => Action::class, 'id' => $action_id, 'actionMethod' => $name, 'parent' => $this]);
+        return Container::build(Action::class, ['id' => $action_id, 'actionMethod' => $name, 'parent' => $this]);
     }
     /**
      * @param \me\components\Action $action Action Object
@@ -89,18 +89,27 @@ class Controller extends Component {
     protected function access() {
         return [];
     }
+    /**
+     * 
+     */
     protected function matchRole($access, $user) {
         if (!isset($access['roles']) || empty($access['roles'])) {
             return true;
         }
         return true;
     }
+    /**
+     * 
+     */
     protected function matchMethods($access, $method) {
         if (!isset($access['methods']) || empty($access['methods'])) {
             return true;
         }
         return in_array($method, $access['methods'], true);
     }
+    /**
+     * 
+     */
     protected function matchIP($access, $ip) {
         if (!isset($access['ip']) || empty($access['ip'])) {
             return true;
@@ -112,6 +121,9 @@ class Controller extends Component {
         }
         return false;
     }
+    /**
+     * 
+     */
     protected function matchCallback($access, $action) {
         if (!isset($access['callback']) || !is_callable($access['callback'])) {
             return true;

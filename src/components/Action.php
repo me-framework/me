@@ -1,8 +1,8 @@
 <?php
 namespace me\components;
-use Exception;
 use ReflectionMethod;
 use me\core\Component;
+use me\exceptions\Exception;
 /**
  * 
  */

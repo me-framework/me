@@ -1,10 +1,12 @@
 <?php
 namespace me\components;
 use Me;
-use Exception;
 use me\url\UrlManager;
 use me\core\Component;
 use me\core\Container;
+use me\helpers\ArrayHelper;
+use me\helpers\StringHelper;
+use me\exceptions\Exception;
 use me\database\DatabaseManager;
 /**
  * @property-read \me\url\UrlManager $urlManager Url Manager
@@ -14,37 +16,29 @@ use me\database\DatabaseManager;
  */
 class Application extends Component {
     /**
-     * @var string Charset
-     */
-    public $charset             = 'UTF-8';
-    /**
-     * @var string Language
-     */
-    public $language            = 'fa-IR';
-    /**
      * @var string Module Namespace
      */
-    public $module_namespace    = 'app\modules';
+    public $moduleNamespace    = 'app\modules';
     /**
      * @var string Default Route
      */
-    public $default_route       = 'site/default/index';
+    public $defaultRoute       = 'site/default/index';
     /**
      * @var string Time Zone
      */
-    protected $_timezone        = 'Asia/Tehran';
-    /**
-     * @var array Components Definitions
-     */
-    protected $_definitions     = [];
+    protected $_timezone       = 'Asia/Tehran';
     /**
      * @var array Components Objects
      */
-    protected $_components      = [];
+    protected $_components     = [];
+    /**
+     * @var array Components Definitions
+     */
+    protected $_definitions    = [];
     /**
      * @var array Core Components
      */
-    protected $_core_components = [
+    protected $_coreComponents = [
         'url'      => ['class' => UrlManager::class],
         'request'  => ['class' => Request::class],
         'response' => ['class' => Response::class],
@@ -58,7 +52,7 @@ class Application extends Component {
         if (!isset($config['components'])) {
             $config['components'] = [];
         }
-        $config['components'] = array_replace_recursive($this->_core_components, $config['components']);
+        $config['components'] = array_replace_recursive($this->_coreComponents, $config['components']);
         parent::__construct($config);
     }
     /**
@@ -77,12 +71,12 @@ class Application extends Component {
             $file    = $exc->getFile();
             $line    = $exc->getLine();
             $message = $exc->getMessage();
-            $this->handle_error($code, $file, $line, $message);
+            $this->handleError($code, $file, $line, $message);
         });
         set_error_handler(function ($code, $message, $file, $line) {
-            $this->handle_error($code, $file, $line, $message);
+            $this->handleError($code, $file, $line, $message);
         });
-        $this->handle_request();
+        $this->handleRequest();
     }
     /**
      * 
@@ -92,7 +86,9 @@ class Application extends Component {
             return $this->_components[$id];
         }
         if (isset($this->_definitions[$id])) {
-            return $this->_components[$id] = Container::build($this->_definitions[$id]);
+            $config = $this->_definitions[$id];
+            $class = ArrayHelper::Remove($config, 'class');
+            return $this->_components[$id] = Container::build($class, $config);
         }
         throw new Exception("Component { $id } Not Found", 11001);
     }
@@ -148,13 +144,16 @@ class Application extends Component {
         $this->_timezone = $timezone;
         date_default_timezone_set($timezone);
     }
-    public function setBase_path($base_path) {
-        Me::set_alias('@app', $base_path);
+    /**
+     * 
+     */
+    public function setBasePath($basePath) {
+        Me::set_alias('@app', $basePath);
     }
     /**
      * @return void
      */
-    private function handle_error($code, $file, $line, $message) {
+    private function handleError($code, $file, $line, $message) {
         $data = ['done' => false, 'code' => $code, 'message' => 'خطای سرور'];
         if (ME_DEBUG) {
             $data['message'] = $message;
@@ -168,10 +167,10 @@ class Application extends Component {
     /**
      * @return void
      */
-    private function handle_request() {
+    private function handleRequest() {
         [$route, $params] = $this->getRequest()->resolve();
 
-        $data = $this->handle_action($route, $params);
+        $data = $this->handleAction($route, $params);
         if ($data instanceof Response) {
             $data->send();
         }
@@ -185,20 +184,22 @@ class Application extends Component {
      * @param array $params Parameters
      * @return \me\components\Response|mixed
      */
-    private function handle_action($module_id, $params) {
+    private function handleAction($module_id, $params) {
         /* @var $module     \me\components\Module */
+        [$module, $controller_id] = $this->createModule($module_id);
+
         /* @var $controller \me\components\Controller */
-        [$module, $controller_id] = $this->create_module($module_id);
-        [$controller, $action_id] = $module->create_controller($controller_id);
-        return $controller->run_action($action_id, $params);
+        [$controller, $action_id] = $module->createController($controller_id);
+
+        return $controller->runAction($action_id, $params);
     }
     /**
      * @param string $module_id Route
      * @return array [\me\components\Module $module, string $route]
      */
-    private function create_module($module_id) {
+    private function createModule($module_id) {
         if ($module_id === '') {
-            $module_id = $this->default_route;
+            $module_id = $this->defaultRoute;
         }
 
         $id    = $module_id;
@@ -207,13 +208,13 @@ class Application extends Component {
             [$id, $route] = explode('/', $module_id, 2);
         }
 
-        $name      = str_replace('-', '_', strtolower($id));
-        $className = $this->module_namespace . "\\$name\\module";
+        $name      = StringHelper::id2name($id);
+        $className = $this->moduleNamespace . "\\$name\\module";
         if (!class_exists($className)) { //  || !($className instanceof Module)
             throw new Exception("Module { $className } Not Found", 11002);
         }
 
-        $module = Container::build(['class' => $className, 'id' => $id]);
+        $module = Container::build($className, ['id' => $id]);
         return [$module, $route];
     }
 }

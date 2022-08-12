@@ -1,13 +1,16 @@
 <?php
 namespace me;
 use Me;
-use Exception;
 use me\core\Cache;
-use me\model\Model;
 use me\core\Container;
+use me\model\Model;
 use me\helpers\ArrayHelper;
+use me\exceptions\Exception;
 use me\database\RecordInterface;
 use me\validators;
+/**
+ * 
+ */
 class Record extends Model implements RecordInterface {
     /**
      * @var string Connection Name
@@ -355,7 +358,7 @@ class Record extends Model implements RecordInterface {
         $arConfig = explode(':', $rule, 2);
         $name     = strtolower($arConfig[0]);
         $options  = $arConfig[1] ?? '';
-        return Container::build(['class' => $validatorsMap[$name], 'options' => $options]);
+        return Container::build($validatorsMap[$name], ['options' => $options]);
     }
     //
     /**

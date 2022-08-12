@@ -1,7 +1,10 @@
 <?php
 namespace me\validators;
-use Exception;
 use me\model\Validator;
+use me\exceptions\Exception;
+/**
+ * 
+ */
 class ExistsValidator extends Validator {
     /**
      * @var string the name of the Record class

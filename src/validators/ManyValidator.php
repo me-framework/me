@@ -1,9 +1,12 @@
 <?php
 namespace me\validators;
-use Exception;
 use me\Record;
 use me\core\Cache;
 use me\model\Validator;
+use me\exceptions\Exception;
+/**
+ * 
+ */
 class ManyValidator extends Validator {
     /**
      * @var string the name of the Record class

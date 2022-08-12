@@ -1,8 +1,9 @@
 <?php
 namespace me\components;
-use Exception;
 use me\core\Component;
 use me\core\Container;
+use me\helpers\StringHelper;
+use me\exceptions\Exception;
 /**
  * 
  */
@@ -14,15 +15,15 @@ class Module extends Component {
     /**
      * @var string Default Route
      */
-    public $default_route = 'default/index';
+    public $defaultRoute = 'default/index';
     /**
      * @var string Controller Namespace
      */
-    public $controller_namespace;
+    public $controllerNamespace;
     /**
      * @var string Module Namespace
      */
-    public $module_namespace;
+    public $moduleNamespace;
     /**
      * @var \me\components\Module|null Parent Object or null (root module)
      */
@@ -31,41 +32,41 @@ class Module extends Component {
      * @param string $controller_id Route
      * @return array [\me\components\Controller $controller, string $action_id]
      */
-    public function create_controller($controller_id) {
+    public function createController($controller_id) {
         if ($controller_id === '') {
-            $controller_id = $this->default_route;
+            $controller_id = $this->defaultRoute;
         }
 
-        $id     = $controller_id;
+        $id    = $controller_id;
         $route = '';
         if (strpos($controller_id, '/') !== false) {
             [$id, $route] = explode('/', $controller_id, 2);
         }
 
-        $module = $this->get_module($id);
+        $module = $this->getModule($id);
         if ($module !== null) {
-            return $module->create_controller($route);
+            return $module->createController($route);
         }
 
-        $name      = str_replace('-', '_', strtolower($id));
-        $className = $this->controller_namespace . "\\{$name}_controller";
+        $name      = StringHelper::id2name($id);
+        $className = $this->controllerNamespace . "\\{$name}Controller";
         if (!class_exists($className)) { //  || !($className instanceof Controller)
             throw new Exception("Controller { $className } Not Found", 12001);
         }
 
-        $controller = Container::build(['class' => $className, 'id' => $id, 'parent' => $this]);
+        $controller = Container::build($className, ['id' => $id, 'parent' => $this]);
         return [$controller, $route];
     }
     /**
      * @param string $id Module ID
      * @return \me\components\Module|null Module Object or null
      */
-    public function get_module($id) {
-        $name      = str_replace('-', '_', strtolower($id));
-        $className = $this->module_namespace . "\\$name\\module";
+    public function getModule($id) {
+        $name      = StringHelper::id2name($id);
+        $className = $this->moduleNamespace . "\\$name\\Module";
         if (!class_exists($className)) { // || !($className instanceof Module)
             return null;
         }
-        return Container::build(['class' => $className, 'id' => $id, 'parent' => $this]);
+        return Container::build($className, ['id' => $id, 'parent' => $this]);
     }
 }

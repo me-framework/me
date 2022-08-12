@@ -1,7 +1,6 @@
 <?php
 namespace me\components;
 use Me;
-use Exception;
 use me\core\Component;
 /**
  * @property-read string $pathInfo Path Info
@@ -27,11 +26,8 @@ class request extends Component {
     public function resolve() {
         $pathInfo = $this->getPathInfo();
         $method   = $this->getMethod();
-        $result   = Me::$app->getUrlManager()->parseRequest($pathInfo, $method);
-        if ($result === false) {
-            throw new Exception('Page Not Found');
-        }
-        [$route, $params] = $result;
+        [$route, $params] = Me::$app->getUrlManager()->parseRequest($pathInfo, $method);
+
         $_GET = $params + $_GET;
         return [$route, $this->get()];
     }
