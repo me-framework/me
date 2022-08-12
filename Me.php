@@ -1,41 +1,24 @@
 <?php
-
 defined('ME_DEBUG') || define('ME_DEBUG', false);
 define('ME_PATH', __DIR__ . '/src');
 define('ROOT_PATH', dirname(filter_input(INPUT_SERVER, 'SCRIPT_FILENAME')));
 define('WEB', dirname(filter_input(INPUT_SERVER, 'PHP_SELF')));
-
 class Me {
     /**
      * @var \me\components\Application
      */
     public static $app;
     /**
-     * @var array
-     */
-    public static $class_map   = [];
-    /**
-     * @var array
-     */
-    public static $loaded_file = [];
-    /**
      * 
      */
     public static function autoload($class_name) {
-        $file = null;
-        if (isset(static::$class_map[$class_name])) {
-            $file = static::$class_map[$class_name];
-            if (strpos($file, '@') === 0) {
-                $file = static::get_alias($file);
-            }
-        }
-        elseif (strpos($class_name, 'app') !== false) {
-            $file = static::get_alias('@' . str_replace(['\\'], ['/'], $class_name) . '.php');
-        }
-        if (is_null($file) || !is_file($file)) {
+        if (strpos($class_name, 'app') === false) {
             return;
         }
-        static::$loaded_file[] = $file;
+        $file = static::get_alias('@' . str_replace(['\\'], ['/'], $class_name) . '.php');
+        if (!is_file($file)) {
+            return;
+        }
         include $file;
     }
     /**
@@ -71,5 +54,4 @@ class Me {
         static::$aliases[$alias] = $path;
     }
 }
-
 spl_autoload_register(['Me', 'autoload'], true, true);
