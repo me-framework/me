@@ -4,6 +4,7 @@ use Me;
 use ReflectionMethod;
 use me\core\Component;
 use me\core\Container;
+use me\helpers\StringHelper;
 use me\exceptions\Exception;
 /**
  * 
@@ -41,7 +42,7 @@ class Controller extends Component {
             $action_id = $this->defaultAction;
         }
 
-        $name = str_replace('-', '_', strtolower($action_id));
+        $name = StringHelper::id2name($action_id);
         if (!method_exists($this, $name)) {
             throw new Exception("Action { $name } Not Found", 13001);
         }

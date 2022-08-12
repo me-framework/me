@@ -210,7 +210,7 @@ class Application extends Component {
         }
 
         $name      = StringHelper::id2name($id);
-        $className = $this->moduleNamespace . "\\$name\\module";
+        $className = $this->moduleNamespace . "\\$name\\Module";
         if (!class_exists($className)) { //  || !($className instanceof Module)
             throw new Exception("Module { $className } Not Found", 11002);
         }
