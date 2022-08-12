@@ -154,7 +154,7 @@ class Application extends Component {
      * @return void
      */
     private function handleError($code, $file, $line, $message) {
-        $data = ['code' => $code, 'message' => 'خطای سرور'];
+        $data = ['message' => 'خطای سرور'];
         if (ME_DEBUG) {
             $data['file']    = $file;
             $data['line']    = $line;
